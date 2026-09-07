@@ -1,0 +1,14 @@
+import { db, collection, query, where, onSnapshot, getProfile, selectStream, mainCategory } from './firebase.js';
+import { header, footer, liveCard, categories, icons, escapeHtml } from './ui.js';
+header('categorias');
+footer();
+const params = new URLSearchParams(location.search);
+const category = params.get('categoria') || 'Gaming';
+const sub = params.get('subcategoria') || '';
+document.querySelector('#category-title').textContent = sub ? `${category} — ${sub}` : category;
+document.querySelector('#category-icon').textContent = icons[category] || '◈';
+const subnav = document.querySelector('#subcategories');
+const subs = categories[category] || [];
+subnav.innerHTML = `<a class="filter ${!sub ? 'active' : ''}" href="categoria.html?categoria=${encodeURIComponent(category)}">Todos</a>` + subs.map(s => `<a class="filter ${sub === s ? 'active' : ''}" href="categoria.html?categoria=${encodeURIComponent(category)}&subcategoria=${encodeURIComponent(s)}">${escapeHtml(s)}</a>`).join('');
+const grid = document.querySelector('#category-lives');
+onSnapshot(query(collection(db, 'streams'), where('status', '==', 'live')), async (snap) => { let base = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => mainCategory(l.categoryId) === category && (!sub || String(l.categoryId).trim() === `${category} - ${sub}`)); base.sort((a, b) => Number(b.viewerCount || 0) - Number(a.viewerCount || 0)); const lives = await Promise.all(base.map(async (l) => { const p = await getProfile(l.streamerUid).catch(() => null); return { ...l, username: p?.username || 'Streamer', photoURL: p?.photoURL || '' }; })); grid.innerHTML = lives.length ? lives.map(liveCard).join('') : '<div class="state">Nenhuma live nesta categoria.</div>'; grid.querySelectorAll('.live-card').forEach(card => card.addEventListener('click', () => { const l = lives.find(x => x.id === card.dataset.liveId); selectStream(l); location.href = 'live.html'; })); });

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <title>
+   Zytrix — Entrar
+  </title>
+  <link href="assets/css/styles.css" rel="stylesheet"/>
+ </head>
+ <body>
+  <div data-header="">
+  </div>
+  <main class="auth-shell">
+   <form class="card auth-card" data-auth-form="" data-mode="login">
+    <div class="brand" style="justify-content:center">
+     <span class="brand-mark">
+      Z
+     </span>
+     <span>
+      Zytrix
+     </span>
+    </div>
+    <h1>
+     Entrar
+    </h1>
+    <div class="form-group">
+     <label>
+      E-mail
+     </label>
+     <input class="input" name="email" required="" type="email"/>
+    </div>
+    <div class="form-group">
+     <label>
+      Senha
+     </label>
+     <input class="input" name="password" required="" type="password"/>
+    </div>
+    <button class="btn btn-purple" style="width:100%">
+     Entrar
+    </button>
+    <div class="form-actions" style="justify-content:center">
+     <a class="muted" href="recuperar-senha.html">
+      Esqueci minha senha
+     </a>
+    </div>
+    <button class="btn" id="google-login" style="width:100%;margin-top:12px" type="button">
+     Entrar com Google
+    </button>
+    <p class="muted" style="text-align:center">
+     Não possui conta?
+     <a href="registro.html" style="color:#fff">
+      Registrar
+     </a>
+    </p>
+    <div class="hidden" id="message">
+    </div>
+   </form>
+  </main>
+  <div data-footer="">
+  </div>
+  <script src="assets/js/auth-pages.js" type="module">
+  </script>
+ </body>
+</html>

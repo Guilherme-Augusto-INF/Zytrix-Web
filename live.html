@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   Zytrix — Live
+  </title>
+  <meta content="Assista transmissões ao vivo na Zytrix, participe do chat em tempo real e apoie streamers com Zy Coins." name="description"/>
+  <link href="assets/css/styles.css" rel="stylesheet"/>
+ </head>
+ <body>
+  <!-- Cabeçalho carregado pelo ui.js -->
+  <div data-header="">
+  </div>
+  <main class="main">
+   <div class="container" id="live-root">
+    <div class="state">
+     Carregando transmissão...
+    </div>
+   </div>
+  </main>
+  <!-- Rodapé carregado pelo ui.js -->
+  <div data-footer="">
+  </div>
+  <noscript>
+   <div class="container">
+    <div class="message err">
+     O JavaScript precisa estar ativado para usar a página de live da Zytrix.
+    </div>
+   </div>
+  </noscript>
+  <!--
+        O live.js monta dinamicamente:
+        - player da Twitch ou Kick
+        - informações da transmissão
+        - perfil do streamer
+        - espectadores
+        - saldo e apoio com Zy Coins
+        - chat em tempo real via Firestore
+        - campo de envio de mensagens
+        - contador de caracteres
+        - moderação de chat, mensagem fixada, mute e ban
+    -->
+  <script src="assets/js/live.js" type="module">
+  </script>
+ </body>
+</html>
