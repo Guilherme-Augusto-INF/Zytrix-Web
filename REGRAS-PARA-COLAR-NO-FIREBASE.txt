@@ -1,0 +1,1460 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==================================================
+    // FUNÇÕES
+    // ==================================================
+
+    function loggedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return loggedIn()
+        && request.auth.uid == uid;
+    }
+
+    function isAdminUid(uid) {
+      return exists(
+          /databases/$(database)/documents/admins/$(uid)
+        )
+        && get(
+          /databases/$(database)/documents/admins/$(uid)
+        ).data.active == true;
+    }
+
+    function isAdmin() {
+      return loggedIn()
+        && isAdminUid(request.auth.uid);
+    }
+
+    function validUsername(username) {
+      return username is string
+        && username.size() >= 2
+        && username.size() <= 30;
+    }
+
+    function validBio(bio) {
+      return bio is string
+        && bio.size() <= 500;
+    }
+
+    function validPhotoURL(url) {
+      return url is string
+        && url.size() <= 2048;
+    }
+
+
+    // ==================================================
+    // ZY COINS - FUNÇÕES AUXILIARES
+    // ==================================================
+
+    function validCoinAmount(amount) {
+      return amount is int
+        && amount >= 1
+        && amount <= 100000;
+    }
+
+    function validWalletShape(data, uid) {
+      return data.uid == uid
+        && data.balance is int
+        && data.balance >= 0
+        && data.totalSent is int
+        && data.totalSent >= 0
+        && data.totalReceived is int
+        && data.totalReceived >= 0
+        && data.lastTransactionId is string
+        && data.lastTransactionId.size() <= 128
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && data.keys().hasAll([
+          "uid",
+          "balance",
+          "totalSent",
+          "totalReceived",
+          "lastTransactionId",
+          "createdAt",
+          "updatedAt"
+        ])
+        && data.keys().hasOnly([
+          "uid",
+          "balance",
+          "totalSent",
+          "totalReceived",
+          "lastTransactionId",
+          "createdAt",
+          "updatedAt"
+        ]);
+    }
+
+    function validCoinPackage(packageId, coins, priceCents) {
+      return
+        (
+          packageId == "zy100"
+          && coins == 100
+          && priceCents == 490
+        )
+        ||
+        (
+          packageId == "zy500"
+          && coins == 500
+          && priceCents == 1490
+        )
+        ||
+        (
+          packageId == "zy1200"
+          && coins == 1200
+          && priceCents == 2990
+        )
+        ||
+        (
+          packageId == "zy2500"
+          && coins == 2500
+          && priceCents == 4990
+        );
+    }
+
+    function validSenderWalletUpdate(uid) {
+      let txId = request.resource.data.lastTransactionId;
+      let tx = getAfter(
+        /databases/$(database)/documents/zyCoinTransactions/$(txId)
+      ).data;
+
+      return isOwner(uid)
+        && validWalletShape(request.resource.data, uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && tx.transactionId == txId
+        && tx.type == "stream_support"
+        && tx.status == "completed"
+        && tx.fromUid == uid
+        && tx.toUid != uid
+        && validCoinAmount(tx.amount)
+        && request.resource.data.balance
+            == resource.data.balance - tx.amount
+        && request.resource.data.totalSent
+            == resource.data.totalSent + tx.amount
+        && request.resource.data.totalReceived
+            == resource.data.totalReceived
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "balance",
+              "totalSent",
+              "lastTransactionId",
+              "updatedAt"
+            ]);
+    }
+
+    function validRecipientWalletUpdate(uid) {
+      let txId = request.resource.data.lastTransactionId;
+      let tx = getAfter(
+        /databases/$(database)/documents/zyCoinTransactions/$(txId)
+      ).data;
+
+      return loggedIn()
+        && request.auth.uid != uid
+        && validWalletShape(request.resource.data, uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && tx.transactionId == txId
+        && tx.type == "stream_support"
+        && tx.status == "completed"
+        && tx.fromUid == request.auth.uid
+        && tx.toUid == uid
+        && validCoinAmount(tx.amount)
+        && request.resource.data.balance
+            == resource.data.balance + tx.amount
+        && request.resource.data.totalSent
+            == resource.data.totalSent
+        && request.resource.data.totalReceived
+            == resource.data.totalReceived + tx.amount
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "balance",
+              "totalReceived",
+              "lastTransactionId",
+              "updatedAt"
+            ]);
+    }
+
+    function validRecipientWalletCreate(uid) {
+      let txId = request.resource.data.lastTransactionId;
+      let tx = getAfter(
+        /databases/$(database)/documents/zyCoinTransactions/$(txId)
+      ).data;
+
+      return loggedIn()
+        && request.auth.uid != uid
+        && validWalletShape(request.resource.data, uid)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && tx.transactionId == txId
+        && tx.type == "stream_support"
+        && tx.status == "completed"
+        && tx.fromUid == request.auth.uid
+        && tx.toUid == uid
+        && validCoinAmount(tx.amount)
+        && request.resource.data.balance == 500 + tx.amount
+        && request.resource.data.totalSent == 0
+        && request.resource.data.totalReceived == tx.amount;
+    }
+
+    function validSupportTransactionCreate(transactionId) {
+      let data = request.resource.data;
+      let streamPath =
+        /databases/$(database)/documents/streams/$(data.streamId);
+
+      let senderPath =
+        /databases/$(database)/documents/wallets/$(data.fromUid);
+
+      let recipientPath =
+        /databases/$(database)/documents/wallets/$(data.toUid);
+
+      let senderBefore = get(senderPath).data;
+      let senderAfter = getAfter(senderPath).data;
+      let recipientAfter = getAfter(recipientPath).data;
+
+      return loggedIn()
+
+        && data.transactionId == transactionId
+
+        && data.fromUid == request.auth.uid
+
+        && data.toUid is string
+        && data.toUid.size() > 0
+        && data.toUid != data.fromUid
+
+        && data.streamId is string
+        && data.streamId.size() > 0
+
+        && validCoinAmount(data.amount)
+
+        && data.type == "stream_support"
+
+        && data.status == "completed"
+
+        && data.createdAt == request.time
+
+        && data.keys().hasAll([
+          "transactionId",
+          "fromUid",
+          "toUid",
+          "streamId",
+          "amount",
+          "type",
+          "status",
+          "createdAt"
+        ])
+
+        && data.keys().hasOnly([
+          "transactionId",
+          "fromUid",
+          "toUid",
+          "streamId",
+          "amount",
+          "type",
+          "status",
+          "createdAt"
+        ])
+
+        && exists(streamPath)
+
+        && get(streamPath).data.streamerUid
+            == data.toUid
+
+        && get(streamPath).data.status
+            == "live"
+
+        && exists(senderPath)
+
+        && senderBefore.balance is int
+
+        && senderBefore.balance >= data.amount
+
+        && senderAfter.uid
+            == data.fromUid
+
+        && senderAfter.createdAt
+            == senderBefore.createdAt
+
+        && senderAfter.updatedAt
+            == request.time
+
+        && senderAfter.lastTransactionId
+            == transactionId
+
+        && senderAfter.balance
+            == senderBefore.balance - data.amount
+
+        && senderAfter.totalSent
+            == senderBefore.totalSent + data.amount
+
+        && senderAfter.totalReceived
+            == senderBefore.totalReceived
+
+        && recipientAfter.uid
+            == data.toUid
+
+        && recipientAfter.updatedAt
+            == request.time
+
+        && recipientAfter.lastTransactionId
+            == transactionId
+
+        && (
+          (
+            exists(recipientPath)
+
+            && recipientAfter.createdAt
+                == get(recipientPath).data.createdAt
+
+            && recipientAfter.balance
+                == get(recipientPath).data.balance
+                   + data.amount
+
+            && recipientAfter.totalSent
+                == get(recipientPath).data.totalSent
+
+            && recipientAfter.totalReceived
+                == get(recipientPath).data.totalReceived
+                   + data.amount
+          )
+
+          ||
+
+          (
+            !exists(recipientPath)
+
+            && recipientAfter.createdAt
+                == request.time
+
+            && recipientAfter.balance
+                == 500 + data.amount
+
+            && recipientAfter.totalSent
+                == 0
+
+            && recipientAfter.totalReceived
+                == data.amount
+          )
+        );
+    }
+
+
+    // ==================================================
+    // ADMINS
+    // ==================================================
+
+    match /admins/{uid} {
+
+      allow read:
+        if true;
+
+      allow create, update, delete:
+        if false;
+    }
+
+
+    // ==================================================
+    // USERS
+    // ==================================================
+
+    match /users/{uid} {
+
+      allow read:
+        if isOwner(uid)
+        || isAdmin();
+
+
+      allow create:
+        if isOwner(uid)
+
+        && request.resource.data.uid == uid
+
+        && request.resource.data.zytrixId is string
+        && request.resource.data.zytrixId.size() >= 5
+        && request.resource.data.zytrixId.size() <= 64
+
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 320
+
+        && (
+          request.resource.data.provider == "password"
+          ||
+          request.resource.data.provider == "google"
+        )
+
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.lastLoginAt == request.time
+
+        && request.resource.data.keys().hasAll([
+          "uid",
+          "zytrixId",
+          "email",
+          "provider",
+          "createdAt",
+          "lastLoginAt"
+        ])
+
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "zytrixId",
+          "email",
+          "provider",
+          "createdAt",
+          "lastLoginAt"
+        ]);
+
+
+      allow update:
+        if
+        (
+          isOwner(uid)
+
+          && request.resource.data.uid
+              == resource.data.uid
+
+          && request.resource.data.provider
+              == resource.data.provider
+
+          && request.resource.data.createdAt
+              == resource.data.createdAt
+
+          && request.resource.data.lastLoginAt
+              == request.time
+
+          && request.resource.data.email is string
+
+          && (
+
+            (
+              resource.data.keys().hasAll([
+                "zytrixId"
+              ])
+
+              && request.resource.data.zytrixId
+                  == resource.data.zytrixId
+
+              && request.resource.data
+                  .diff(resource.data)
+                  .affectedKeys()
+                  .hasOnly([
+                    "email",
+                    "lastLoginAt"
+                  ])
+            )
+
+            ||
+
+            (
+              !resource.data.keys().hasAll([
+                "zytrixId"
+              ])
+
+              && request.resource.data.zytrixId is string
+
+              && request.resource.data.zytrixId.size() >= 5
+              && request.resource.data.zytrixId.size() <= 64
+
+              && request.resource.data
+                  .diff(resource.data)
+                  .affectedKeys()
+                  .hasOnly([
+                    "email",
+                    "lastLoginAt",
+                    "zytrixId"
+                  ])
+            )
+          )
+        )
+
+        ||
+
+        (
+          isAdmin()
+
+          && request.resource.data.uid
+              == resource.data.uid
+        );
+
+
+      allow delete:
+        if isOwner(uid)
+        || isAdmin();
+
+
+      // ================================================
+      // SEGUINDO
+      // ================================================
+
+      match /following/{channelId} {
+
+        allow read:
+          if isOwner(uid)
+          || isAdmin();
+
+        allow create:
+          if isOwner(uid)
+
+          && request.resource.data.channelId
+              == channelId
+
+          && request.resource.data.followedAt
+              == request.time
+
+          && request.resource.data.keys().hasOnly([
+            "channelId",
+            "followedAt"
+          ]);
+
+        allow update:
+          if false;
+
+        allow delete:
+          if isOwner(uid)
+          || isAdmin();
+      }
+
+
+      // ================================================
+      // HISTÓRICO
+      // ================================================
+
+      match /watchHistory/{streamId} {
+
+        allow read:
+          if isOwner(uid)
+          || isAdmin();
+
+        allow create, update:
+          if isOwner(uid);
+
+        allow delete:
+          if isOwner(uid)
+          || isAdmin();
+      }
+    }
+
+
+    // ==================================================
+    // PERFIS
+    // ==================================================
+
+    match /profiles/{uid} {
+
+      allow read:
+        if true;
+
+
+      allow create:
+        if isOwner(uid)
+
+        && request.resource.data.uid == uid
+
+        && validUsername(
+          request.resource.data.username
+        )
+
+        && validPhotoURL(
+          request.resource.data.photoURL
+        )
+
+        && validBio(
+          request.resource.data.bio
+        )
+
+        && request.resource.data.createdAt
+            == request.time
+
+        && request.resource.data.usernameUpdatedAt
+            == request.time
+
+        && request.resource.data.keys().hasAll([
+          "uid",
+          "username",
+          "photoURL",
+          "bio",
+          "createdAt",
+          "usernameUpdatedAt"
+        ])
+
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "username",
+          "photoURL",
+          "bio",
+          "createdAt",
+          "usernameUpdatedAt"
+        ]);
+
+
+      allow update:
+        if
+        (
+          isOwner(uid)
+
+          && request.resource.data.uid
+              == resource.data.uid
+
+          && request.resource.data.createdAt
+              == resource.data.createdAt
+
+          && validUsername(
+            request.resource.data.username
+          )
+
+          && validPhotoURL(
+            request.resource.data.photoURL
+          )
+
+          && validBio(
+            request.resource.data.bio
+          )
+
+          && (
+
+            // FOTO / BIO
+            (
+              request.resource.data.username
+                  == resource.data.username
+
+              && request.resource.data.usernameUpdatedAt
+                  == resource.data.usernameUpdatedAt
+
+              && request.resource.data
+                  .diff(resource.data)
+                  .affectedKeys()
+                  .hasOnly([
+                    "photoURL",
+                    "bio"
+                  ])
+            )
+
+            ||
+
+            // USERNAME A CADA 7 DIAS
+            (
+              request.resource.data.username
+                  != resource.data.username
+
+              && resource.data.usernameUpdatedAt
+                  is timestamp
+
+              && request.time
+                  >= resource.data.usernameUpdatedAt
+                     + duration.value(7, "d")
+
+              && request.resource.data.usernameUpdatedAt
+                  == request.time
+
+              && request.resource.data
+                  .diff(resource.data)
+                  .affectedKeys()
+                  .hasOnly([
+                    "username",
+                    "usernameUpdatedAt",
+                    "photoURL",
+                    "bio"
+                  ])
+            )
+          )
+        )
+
+        ||
+
+        (
+          isAdmin()
+
+          && request.resource.data.uid
+              == resource.data.uid
+
+          && request.resource.data.createdAt
+              == resource.data.createdAt
+        );
+
+
+      allow delete:
+        if isOwner(uid)
+        || isAdmin();
+    }
+
+
+    // ==================================================
+    // CANAIS
+    // ==================================================
+
+    match /channels/{channelId} {
+
+      allow read:
+        if true;
+
+
+      allow create:
+        if isOwner(channelId)
+
+        && request.resource.data.ownerUid
+            == request.auth.uid
+
+        && request.resource.data.createdAt
+            == request.time
+
+        && request.resource.data.keys().hasOnly([
+          "ownerUid",
+          "channelName",
+          "description",
+          "avatarURL",
+          "bannerURL",
+          "categoryId",
+          "isLive",
+          "currentStreamId",
+          "createdAt"
+        ]);
+
+
+      allow update:
+        if
+        (
+          isOwner(channelId)
+
+          && resource.data.ownerUid
+              == request.auth.uid
+
+          && request.resource.data.ownerUid
+              == resource.data.ownerUid
+
+          && request.resource.data.createdAt
+              == resource.data.createdAt
+
+          && request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                "channelName",
+                "description",
+                "avatarURL",
+                "bannerURL",
+                "categoryId",
+                "isLive",
+                "currentStreamId"
+              ])
+        )
+
+        || isAdmin();
+
+
+      allow delete:
+        if
+        (
+          isOwner(channelId)
+
+          && resource.data.ownerUid
+              == request.auth.uid
+        )
+
+        || isAdmin();
+
+
+      // ================================================
+      // SEGUIDORES
+      // ================================================
+
+      match /followers/{followerUid} {
+
+        allow read:
+          if true;
+
+        allow create:
+          if isOwner(followerUid)
+
+          && request.resource.data.uid
+              == followerUid
+
+          && request.resource.data.followedAt
+              == request.time
+
+          && request.resource.data.keys().hasOnly([
+            "uid",
+            "followedAt"
+          ]);
+
+        allow update:
+          if false;
+
+        allow delete:
+          if isOwner(followerUid)
+          || isAdmin();
+      }
+
+
+      // ================================================
+      // DADOS PRIVADOS DO CANAL
+      // ================================================
+
+      match /private/{documentId} {
+
+        allow read, create, update, delete:
+          if isOwner(channelId)
+          || isAdmin();
+      }
+    }
+
+
+    // ==================================================
+    // LIVES
+    // ==================================================
+
+    match /streams/{streamId} {
+
+      // Home pode mostrar lives sem login.
+      allow read:
+        if true;
+
+
+      // ================================================
+      // CRIAR LIVE
+      // ================================================
+
+      // playbackURL pode apontar para um canal da Twitch ou da Kick.
+      allow create:
+        if loggedIn()
+
+        && request.resource.data.streamerUid
+            == request.auth.uid
+
+        && request.resource.data.channelId
+            == request.auth.uid
+
+        && request.resource.data.createdAt
+            == request.time
+
+        && request.resource.data.viewerCount
+            is int
+
+        && request.resource.data.viewerCount
+            == 0
+
+        && request.resource.data.keys().hasAll([
+          "streamerUid",
+          "channelId",
+          "title",
+          "description",
+          "categoryId",
+          "thumbnailURL",
+          "status",
+          "playbackURL",
+          "startedAt",
+          "endedAt",
+          "createdAt",
+          "viewerCount"
+        ])
+
+        && request.resource.data.keys().hasOnly([
+          "streamerUid",
+          "channelId",
+          "title",
+          "description",
+          "categoryId",
+          "thumbnailURL",
+          "status",
+          "playbackURL",
+          "startedAt",
+          "endedAt",
+          "createdAt",
+          "viewerCount"
+        ]);
+
+
+      // ================================================
+      // ATUALIZAR LIVE
+      // ================================================
+
+      allow update:
+        if
+        (
+          loggedIn()
+
+          && resource.data.streamerUid
+              == request.auth.uid
+
+          && request.resource.data.streamerUid
+              == resource.data.streamerUid
+
+          && request.resource.data.channelId
+              == resource.data.channelId
+
+          && request.resource.data.createdAt
+              == resource.data.createdAt
+
+          && request.resource.data.viewerCount
+              is int
+
+          && request.resource.data.viewerCount
+              == resource.data.viewerCount
+
+          // STREAMER NÃO PODE ALTERAR VIEWERCOUNT
+          && request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                "title",
+                "description",
+                "categoryId",
+                "thumbnailURL",
+                "status",
+                "playbackURL",
+                "startedAt",
+                "endedAt"
+              ])
+        )
+
+        ||
+
+        // ADMIN PODE ALTERAR PARA TESTES.
+        (
+          isAdmin()
+
+          && request.resource.data.viewerCount
+              is int
+
+          && request.resource.data.viewerCount
+              >= 0
+        );
+
+
+      // ================================================
+      // EXCLUIR LIVE
+      // ================================================
+
+      allow delete:
+        if
+        (
+          loggedIn()
+          && resource.data.streamerUid == request.auth.uid
+        )
+        || isAdmin();
+
+      // ================================================
+      // CHAT EM TEMPO REAL
+      // ================================================
+
+      match /chat/{messageId} {
+        allow read:
+          if true;
+
+        allow create:
+          if loggedIn()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 300
+          && request.resource.data.createdAt == request.time
+          && get(
+            /databases/$(database)/documents/streams/$(streamId)
+          ).data.status == "live"
+          && (
+            !exists(
+              /databases/$(database)/documents/streams/$(streamId)/chatBans/$(request.auth.uid)
+            )
+            || (
+              get(
+                /databases/$(database)/documents/streams/$(streamId)/chatBans/$(request.auth.uid)
+              ).data.expiresAt != null
+              && get(
+                /databases/$(database)/documents/streams/$(streamId)/chatBans/$(request.auth.uid)
+              ).data.expiresAt <= request.time
+            )
+          )
+          && request.resource.data.keys().hasOnly([
+            "uid",
+            "text",
+            "createdAt"
+          ]);
+
+        allow update:
+          if false;
+
+        allow delete:
+          if loggedIn()
+          && (
+            resource.data.uid == request.auth.uid
+            || isAdmin()
+            || (
+              get(
+                /databases/$(database)/documents/streams/$(streamId)
+              ).data.streamerUid == request.auth.uid
+              && !isAdminUid(resource.data.uid)
+            )
+          );
+      }
+
+
+      // ================================================
+      // MODERAÇÃO DO CHAT
+      // ================================================
+
+      match /chatBans/{uid} {
+        allow read:
+          if loggedIn()
+          && (
+            request.auth.uid == uid
+            || get(
+              /databases/$(database)/documents/streams/$(streamId)
+            ).data.streamerUid == request.auth.uid
+            || isAdmin()
+          );
+
+        allow create, update:
+          if loggedIn()
+          && (
+            isAdmin()
+            || (
+              get(
+                /databases/$(database)/documents/streams/$(streamId)
+              ).data.streamerUid == request.auth.uid
+              && !isAdminUid(uid)
+            )
+          )
+          && request.resource.data.uid == uid
+          && request.resource.data.bannedBy == request.auth.uid
+          && request.resource.data.reason in ["mute", "ban"]
+          && request.resource.data.createdAt == request.time
+          && (
+            request.resource.data.expiresAt == null
+            || request.resource.data.expiresAt is timestamp
+          )
+          && request.resource.data.keys().hasOnly([
+            "uid",
+            "bannedBy",
+            "reason",
+            "createdAt",
+            "expiresAt"
+          ]);
+
+        allow delete:
+          if loggedIn()
+          && (
+            isAdmin()
+            || (
+              get(
+                /databases/$(database)/documents/streams/$(streamId)
+              ).data.streamerUid == request.auth.uid
+              && !isAdminUid(uid)
+            )
+          );
+      }
+
+
+      // ================================================
+      // MENSAGEM FIXADA DO CHAT
+      // ================================================
+
+      match /chatConfig/{docId} {
+        allow read:
+          if true;
+
+        allow create, update:
+          if docId == "main"
+          && loggedIn()
+          && (
+            get(
+              /databases/$(database)/documents/streams/$(streamId)
+            ).data.streamerUid == request.auth.uid
+            || isAdmin()
+          )
+          && request.resource.data.pinnedMessageId is string
+          && request.resource.data.pinnedMessageId.size() > 0
+          && request.resource.data.pinnedMessageId.size() <= 128
+          && exists(
+            /databases/$(database)/documents/streams/$(streamId)/chat/$(request.resource.data.pinnedMessageId)
+          )
+          && request.resource.data.updatedBy == request.auth.uid
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.keys().hasOnly([
+            "pinnedMessageId",
+            "updatedBy",
+            "updatedAt"
+          ]);
+
+        allow delete:
+          if docId == "main"
+          && loggedIn()
+          && (
+            get(
+              /databases/$(database)/documents/streams/$(streamId)
+            ).data.streamerUid == request.auth.uid
+            || isAdmin()
+          );
+      }
+    }
+
+
+    // ==================================================
+    // ZY COINS - CARTEIRAS
+    // ==================================================
+    //
+    // Cada conta pode ativar uma única carteira com
+    // 500 Zy Coins de bônus.
+    //
+    // O usuário NÃO pode simplesmente aumentar seu
+    // próprio saldo pelo navegador.
+    //
+    // Os apoios são validados junto da transação.
+    // ==================================================
+
+    match /wallets/{uid} {
+
+      allow read:
+        if isOwner(uid)
+        || isAdmin();
+
+
+      // ================================================
+      // CRIAR CARTEIRA
+      // ================================================
+
+      allow create:
+        if
+        (
+          isOwner(uid)
+
+          && validWalletShape(
+            request.resource.data,
+            uid
+          )
+
+          && request.resource.data.balance
+              == 500
+
+          && request.resource.data.totalSent
+              == 0
+
+          && request.resource.data.totalReceived
+              == 0
+
+          && request.resource.data.lastTransactionId
+              == ""
+
+          && request.resource.data.createdAt
+              == request.time
+
+          && request.resource.data.updatedAt
+              == request.time
+        )
+
+        ||
+
+        // Permite criar carteira do streamer ao
+        // receber seu primeiro apoio.
+        validRecipientWalletCreate(uid)
+
+        ||
+
+        isAdmin();
+
+
+      // ================================================
+      // ATUALIZAR CARTEIRA
+      // ================================================
+
+      allow update:
+        if validSenderWalletUpdate(uid)
+        || validRecipientWalletUpdate(uid)
+        || isAdmin();
+
+
+      // ================================================
+      // EXCLUIR CARTEIRA
+      // ================================================
+
+      allow delete:
+        if isAdmin();
+    }
+
+
+    // ==================================================
+    // ZY COINS - APOIOS EM LIVE
+    // ==================================================
+    //
+    // Documento criado junto do débito do espectador
+    // e crédito do streamer.
+    //
+    // Usuários não podem alterar ou excluir depois.
+    // ==================================================
+
+    match /zyCoinTransactions/{transactionId} {
+
+      allow read:
+        if loggedIn()
+
+        && (
+          resource.data.fromUid
+              == request.auth.uid
+
+          ||
+
+          resource.data.toUid
+              == request.auth.uid
+
+          ||
+
+          isAdmin()
+        );
+
+
+      allow create:
+        if validSupportTransactionCreate(
+          transactionId
+        );
+
+
+      allow update, delete:
+        if false;
+    }
+
+
+    // ==================================================
+    // ZY COINS - PEDIDOS DE COMPRA
+    // ==================================================
+    //
+    // Usuário comum:
+    // pode criar apenas pedido PENDING.
+    //
+    // O navegador NÃO pode dizer sozinho que uma
+    // compra com dinheiro real foi aprovada.
+    //
+    // Admin pode usar o modo de demonstração
+    // durante o TCC.
+    // ==================================================
+
+    match /zyCoinOrders/{orderId} {
+
+      allow read:
+        if loggedIn()
+
+        && (
+          resource.data.uid
+              == request.auth.uid
+
+          ||
+
+          isAdmin()
+        );
+
+
+      // ================================================
+      // CRIAR PEDIDO
+      // ================================================
+
+      allow create:
+        if loggedIn()
+
+        && request.resource.data.uid
+            == request.auth.uid
+
+        && validCoinPackage(
+          request.resource.data.packageId,
+          request.resource.data.coins,
+          request.resource.data.priceCents
+        )
+
+        && (
+          request.resource.data.paymentMethod
+              == "pix"
+
+          ||
+
+          request.resource.data.paymentMethod
+              == "card"
+        )
+
+        && request.resource.data.createdAt
+            == request.time
+
+        && request.resource.data.keys().hasAll([
+          "uid",
+          "packageId",
+          "coins",
+          "priceCents",
+          "paymentMethod",
+          "status",
+          "mode",
+          "createdAt",
+          "paidAt"
+        ])
+
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "packageId",
+          "coins",
+          "priceCents",
+          "paymentMethod",
+          "status",
+          "mode",
+          "createdAt",
+          "paidAt"
+        ])
+
+        && (
+
+          // Usuário comum
+          (
+            request.resource.data.status
+                == "pending"
+
+            && request.resource.data.mode
+                == "prototype"
+
+            && request.resource.data.paidAt
+                == null
+          )
+
+          ||
+
+          // Demonstração pelo administrador
+          (
+            isAdmin()
+
+            && request.resource.data.status
+                == "paid"
+
+            && request.resource.data.mode
+                == "admin_demo"
+
+            && request.resource.data.paidAt
+                == request.time
+          )
+        );
+
+
+      // ================================================
+      // ATUALIZAR PEDIDO
+      // ================================================
+
+      allow update:
+        if isAdmin()
+
+        && request.resource.data.uid
+            == resource.data.uid
+
+        && request.resource.data.packageId
+            == resource.data.packageId
+
+        && request.resource.data.coins
+            == resource.data.coins
+
+        && request.resource.data.priceCents
+            == resource.data.priceCents
+
+        && request.resource.data.paymentMethod
+            == resource.data.paymentMethod
+
+        && request.resource.data.createdAt
+            == resource.data.createdAt
+
+        && request.resource.data.mode
+            == resource.data.mode
+
+        && (
+          request.resource.data.status
+              == "pending"
+
+          ||
+
+          request.resource.data.status
+              == "paid"
+
+          ||
+
+          request.resource.data.status
+              == "cancelled"
+        )
+
+        && (
+          (
+            request.resource.data.status
+                == "paid"
+
+            && request.resource.data.paidAt
+                == request.time
+          )
+
+          ||
+
+          (
+            request.resource.data.status
+                != "paid"
+
+            && request.resource.data.paidAt
+                == null
+          )
+        )
+
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "status",
+              "paidAt"
+            ]);
+
+
+      // ================================================
+      // EXCLUIR PEDIDO
+      // ================================================
+
+      allow delete:
+        if isAdmin();
+    }
+
+
+    // ==================================================
+    // CATEGORIAS
+    // ==================================================
+
+    match /categories/{categoryId} {
+
+      allow read:
+        if true;
+
+      allow create, update, delete:
+        if isAdmin();
+    }
+
+
+    // ==================================================
+    // STREAMERS ESCOLHIDOS MANUALMENTE
+    // ==================================================
+    //
+    // Não controla mais o TOP 3 da Home.
+    // Mantemos para uso futuro.
+    // ==================================================
+
+    match /featuredStreamers/{uid} {
+
+      allow read:
+        if true;
+
+      allow create, update, delete:
+        if isAdmin();
+    }
+
+
+    // ==================================================
+    // BLOQUEIO FINAL
+    // ==================================================
+
+    match /{document=**} {
+
+      allow read, write:
+        if false;
+    }
+  }
+}
