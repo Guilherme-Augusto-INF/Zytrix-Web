@@ -1,0 +1,36 @@
+name: Montar regras do Firestore
+
+on:
+  push:
+    paths:
+      - ".github/workflows/assemble-rules.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Montar arquivo completo de regras
+        shell: bash
+        run: |
+          cat .tmp/rules-*.b64 > /tmp/firestore-rules.b64
+          base64 --decode /tmp/firestore-rules.b64 > firestore.rules
+          test "$(wc -c < firestore.rules)" -eq 34999
+          mkdir -p firebase
+          cp firestore.rules firebase/firestore.rules
+          cp firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+
+      - name: Limpar temporários e salvar regras
+        shell: bash
+        run: |
+          rm -rf .tmp
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: adiciona regras completas do Firestore" || exit 0
+          git push
