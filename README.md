@@ -2,6 +2,12 @@
 
 Versão web tradicional do Zytrix, sem React e sem Figma Sites.
 
+## Produção
+
+A versão Web está publicada em:
+
+https://zytrix-web.vercel.app
+
 ## Tecnologias
 
 - HTML5
@@ -39,6 +45,7 @@ As regras completas estão em:
 
 - `firestore.rules`
 - `firebase/firestore.rules`
+- `REGRAS-PARA-COLAR-NO-FIREBASE.txt`
 
 No Firebase Console, mantenha habilitados os provedores necessários em Authentication e adicione o domínio de produção da Vercel em **Authentication > Settings > Authorized domains**.
 
@@ -123,9 +130,13 @@ A tela de pagamento continua propositalmente demonstrativa. Não use dados reais
 
 ## Vercel
 
-O projeto inclui `vercel.json` e pode ser publicado como site estático.
+O projeto inclui `vercel.json` e está publicado como projeto `zytrix-web`.
 
-Depois do deploy, adicione o domínio Vercel em **Firebase Authentication > Settings > Authorized domains**.
+Produção:
+
+https://zytrix-web.vercel.app
+
+Depois do deploy, adicione `zytrix-web.vercel.app` em **Firebase Authentication > Settings > Authorized domains**.
 
 ## Estrutura principal
 
