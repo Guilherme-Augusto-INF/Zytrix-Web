@@ -1,0 +1,180 @@
+name: Finalizar recursos sociais e administrativos
+
+on:
+  push:
+    paths:
+      - ".github/workflows/finish-features.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  finish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Integrar scripts, estilos e regras
+        shell: python
+        run: |
+          from pathlib import Path
+
+          html_files = [
+              'index.html', 'ao-vivo.html', 'categorias.html', 'categoria.html',
+              'live.html', 'sobre.html', 'login.html', 'registro.html',
+              'recuperar-senha.html', 'perfil.html', 'config-live.html',
+              'loja.html', 'pagamento.html', 'sair.html'
+          ]
+
+          special_scripts = {
+              'live.html': 'assets/js/live-social.js',
+              'perfil.html': 'assets/js/profile-social.js',
+              'config-live.html': 'assets/js/streamer-dashboard.js',
+          }
+
+          for file_name in html_files:
+              path = Path(file_name)
+              text = path.read_text(encoding='utf-8')
+
+              if 'assets/css/features.css' not in text:
+                  marker = '<link rel="stylesheet" href="assets/css/styles.css">'
+                  marker_alt = '<link href="assets/css/styles.css" rel="stylesheet"/>'
+                  addition = '\n  <link rel="stylesheet" href="assets/css/features.css">'
+                  if marker in text:
+                      text = text.replace(marker, marker + addition, 1)
+                  elif marker_alt in text:
+                      text = text.replace(marker_alt, marker_alt + addition, 1)
+                  else:
+                      raise RuntimeError(f'Link principal de CSS não encontrado em {file_name}')
+
+              script = special_scripts.get(file_name)
+              if script and script not in text:
+                  text = text.replace(
+                      '</body>',
+                      f'  <script type="module" src="{script}"></script>\n</body>',
+                      1
+                  )
+
+              if 'assets/js/global-features.js' not in text:
+                  text = text.replace(
+                      '</body>',
+                      '  <script type="module" src="assets/js/global-features.js"></script>\n</body>',
+                      1
+                  )
+
+              path.write_text(text, encoding='utf-8')
+
+          viewer_rules = r'''
+
+    // ==================================================
+    // PRESENÇA DE ESPECTADORES NA ZYTRIX
+    // ==================================================
+    // Presença leve para contabilizar usuários autenticados ativos
+    // em uma live. Documentos sem heartbeat recente deixam de ser
+    // considerados pelo frontend após 90 segundos.
+
+    match /streams/{streamId}/viewers/{viewerUid} {
+
+      allow read:
+        if loggedIn();
+
+      allow create:
+        if isOwner(viewerUid)
+        && request.resource.data.uid == viewerUid
+        && request.resource.data.joinedAt == request.time
+        && request.resource.data.lastSeen == request.time
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "joinedAt",
+          "lastSeen"
+        ]);
+
+      allow update:
+        if isOwner(viewerUid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.joinedAt == resource.data.joinedAt
+        && request.resource.data.lastSeen == request.time
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "lastSeen"
+            ]);
+
+      allow delete:
+        if isOwner(viewerUid)
+        || isAdmin()
+        || (
+          loggedIn()
+          && get(
+            /databases/$(database)/documents/streams/$(streamId)
+          ).data.streamerUid == request.auth.uid
+        );
+    }
+'''
+
+          catch_all = '''    match /{document=**} {
+
+      allow read, write:
+        if false;
+    }'''
+
+          rules_path = Path('firestore.rules')
+          rules = rules_path.read_text(encoding='utf-8')
+          if 'PRESENÇA DE ESPECTADORES NA ZYTRIX' not in rules:
+              if catch_all not in rules:
+                  raise RuntimeError('Bloco final de negação das regras não encontrado')
+              rules = rules.replace(catch_all, viewer_rules + '\n' + catch_all, 1)
+              rules_path.write_text(rules, encoding='utf-8')
+
+          Path('firebase/firestore.rules').write_text(rules, encoding='utf-8')
+          Path('REGRAS-PARA-COLAR-NO-FIREBASE.txt').write_text(rules, encoding='utf-8')
+
+          readme = Path('README.md')
+          readme_text = readme.read_text(encoding='utf-8')
+          if '## Recursos sociais e administração' not in readme_text:
+              readme_text += '''
+
+## Recursos sociais e administração
+
+- seguir e deixar de seguir streamers diretamente na página da live;
+- contagem de seguidores no perfil, live e painel do streamer;
+- presença de espectadores autenticados ativos na Zytrix, com heartbeat;
+- página `notificacoes.html` com canais seguidos e lives ativas;
+- aviso na navegação quando um canal seguido está ao vivo;
+- página `admin.html`, visível apenas para documentos `admins/{uid}` ativos;
+- painel administrativo de leitura com usuários, streamers, lives, chat, banimentos, Zy Coins, pedidos e categorias;
+- os botões manuais **Iniciar live** e **Encerrar live** continuam sendo a fonte de controle do status Zytrix.
+'''
+              readme.write_text(readme_text, encoding='utf-8')
+
+      - name: Verificações básicas
+        shell: bash
+        run: |
+          test -f assets/js/social.js
+          test -f assets/js/global-features.js
+          test -f assets/js/live-social.js
+          test -f assets/js/profile-social.js
+          test -f assets/js/streamer-dashboard.js
+          test -f assets/js/notificacoes.js
+          test -f assets/js/admin.js
+          test -f assets/css/features.css
+          test -f notificacoes.html
+          test -f admin.html
+          grep -q "PRESENÇA DE ESPECTADORES NA ZYTRIX" firestore.rules
+          cmp -s firestore.rules firebase/firestore.rules
+          cmp -s firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+          grep -q "global-features.js" index.html
+          grep -q "live-social.js" live.html
+          grep -q "profile-social.js" perfil.html
+          grep -q "streamer-dashboard.js" config-live.html
+
+      - name: Commitar integração
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: integra social notificacoes admin e viewer presence" || exit 0
+          git push
