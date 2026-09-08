@@ -26,70 +26,31 @@
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
         }
       ]
     }
   ],
   "rewrites": [
-    {
-      "source": "/ao-vivo",
-      "destination": "/ao-vivo.html"
-    },
-    {
-      "source": "/categorias",
-      "destination": "/categorias.html"
-    },
-    {
-      "source": "/categoria",
-      "destination": "/categoria.html"
-    },
-    {
-      "source": "/live",
-      "destination": "/live.html"
-    },
-    {
-      "source": "/sobre",
-      "destination": "/sobre.html"
-    },
-    {
-      "source": "/login",
-      "destination": "/login.html"
-    },
-    {
-      "source": "/registro",
-      "destination": "/registro.html"
-    },
-    {
-      "source": "/recuperar-senha",
-      "destination": "/recuperar-senha.html"
-    },
-    {
-      "source": "/perfil",
-      "destination": "/perfil.html"
-    },
-    {
-      "source": "/config-live",
-      "destination": "/config-live.html"
-    },
-    {
-      "source": "/loja",
-      "destination": "/loja.html"
-    },
-    {
-      "source": "/pagamento",
-      "destination": "/pagamento.html"
-    },
-    {
-      "source": "/sair",
-      "destination": "/sair.html"
-    },
-    {
-      "source": "/notificacoes",
-      "destination": "/notificacoes.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/admin.html"
-    }
+    { "source": "/ao-vivo", "destination": "/ao-vivo.html" },
+    { "source": "/categorias", "destination": "/categorias.html" },
+    { "source": "/categoria", "destination": "/categoria.html" },
+    { "source": "/live", "destination": "/live.html" },
+    { "source": "/recursos", "destination": "/recursos.html" },
+    { "source": "/faq", "destination": "/faq.html" },
+    { "source": "/sobre", "destination": "/sobre.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/registro", "destination": "/registro.html" },
+    { "source": "/recuperar-senha", "destination": "/recuperar-senha.html" },
+    { "source": "/perfil", "destination": "/perfil.html" },
+    { "source": "/config-live", "destination": "/config-live.html" },
+    { "source": "/loja", "destination": "/loja.html" },
+    { "source": "/pagamento", "destination": "/pagamento.html" },
+    { "source": "/sair", "destination": "/sair.html" },
+    { "source": "/notificacoes", "destination": "/notificacoes.html" },
+    { "source": "/admin", "destination": "/admin.html" }
   ]
 }
