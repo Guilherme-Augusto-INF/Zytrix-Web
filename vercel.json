@@ -52,6 +52,14 @@
       "destination": "/live.html"
     },
     {
+      "source": "/recursos",
+      "destination": "/recursos.html"
+    },
+    {
+      "source": "/faq",
+      "destination": "/faq.html"
+    },
+    {
       "source": "/sobre",
       "destination": "/sobre.html"
     },
