@@ -17,7 +17,6 @@ export function header(active = '') {
           <a class="${active === 'inicio' ? 'active' : ''}" href="index.html">Início</a>
           <a class="${active === 'categorias' ? 'active' : ''}" href="categorias.html">Categorias</a>
           <a class="${active === 'ao-vivo' ? 'active' : ''}" href="ao-vivo.html">Ao Vivo</a>
-          <a class="${active === 'recursos' ? 'active' : ''}" href="recursos.html">Recursos</a>
           <a class="${active === 'sobre' ? 'active' : ''}" href="sobre.html">Sobre</a>
         </nav>
 
@@ -67,7 +66,6 @@ export function footer() {
         <div class="footer-links">
           <a href="recursos.html">Recursos</a>
           <a href="faq.html">FAQ</a>
-          <a href="categorias.html">Categorias</a>
           <a href="sobre.html">Sobre</a>
         </div>
       </div>
