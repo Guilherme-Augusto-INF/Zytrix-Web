@@ -26,7 +26,7 @@ jobs:
           import re
           import xml.etree.ElementTree as ET
 
-          base = 'https://zytrix-web.vercel.app'
+          base = 'https://zytrix-lives.vercel.app'
           public_pages = [
               'index.html',
               'ao-vivo.html',
