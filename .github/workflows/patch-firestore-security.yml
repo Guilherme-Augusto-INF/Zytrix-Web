@@ -1,4 +1,4 @@
-name: Patch Firestore Security
+name: Patch Firestore Security v2
 
 on:
   push:
