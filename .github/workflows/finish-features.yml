@@ -15,10 +15,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Integrar scripts, estilos e regras
-        shell: python
+      - name: Integrar scripts estilos e regras
+        shell: bash
         run: |
+          python - <<'PY'
           from pathlib import Path
+          import base64
 
           html_files = [
               'index.html', 'ao-vivo.html', 'categorias.html', 'categoria.html',
@@ -26,7 +28,6 @@ jobs:
               'recuperar-senha.html', 'perfil.html', 'config-live.html',
               'loja.html', 'pagamento.html', 'sair.html'
           ]
-
           special_scripts = {
               'live.html': 'assets/js/live-social.js',
               'perfil.html': 'assets/js/profile-social.js',
@@ -36,7 +37,6 @@ jobs:
           for file_name in html_files:
               path = Path(file_name)
               text = path.read_text(encoding='utf-8')
-
               if 'assets/css/features.css' not in text:
                   marker = '<link rel="stylesheet" href="assets/css/styles.css">'
                   marker_alt = '<link href="assets/css/styles.css" rel="stylesheet"/>'
@@ -46,110 +46,37 @@ jobs:
                   elif marker_alt in text:
                       text = text.replace(marker_alt, marker_alt + addition, 1)
                   else:
-                      raise RuntimeError(f'Link principal de CSS não encontrado em {file_name}')
+                      raise RuntimeError(f'CSS principal não encontrado em {file_name}')
 
               script = special_scripts.get(file_name)
               if script and script not in text:
-                  text = text.replace(
-                      '</body>',
-                      f'  <script type="module" src="{script}"></script>\n</body>',
-                      1
-                  )
-
+                  text = text.replace('</body>', f'  <script type="module" src="{script}"></script>\n</body>', 1)
               if 'assets/js/global-features.js' not in text:
-                  text = text.replace(
-                      '</body>',
-                      '  <script type="module" src="assets/js/global-features.js"></script>\n</body>',
-                      1
-                  )
-
+                  text = text.replace('</body>', '  <script type="module" src="assets/js/global-features.js"></script>\n</body>', 1)
               path.write_text(text, encoding='utf-8')
 
-          viewer_rules = r'''
-
-    // ==================================================
-    // PRESENÇA DE ESPECTADORES NA ZYTRIX
-    // ==================================================
-    // Presença leve para contabilizar usuários autenticados ativos
-    // em uma live. Documentos sem heartbeat recente deixam de ser
-    // considerados pelo frontend após 90 segundos.
-
-    match /streams/{streamId}/viewers/{viewerUid} {
-
-      allow read:
-        if loggedIn();
-
-      allow create:
-        if isOwner(viewerUid)
-        && request.resource.data.uid == viewerUid
-        && request.resource.data.joinedAt == request.time
-        && request.resource.data.lastSeen == request.time
-        && request.resource.data.keys().hasOnly([
-          "uid",
-          "joinedAt",
-          "lastSeen"
-        ]);
-
-      allow update:
-        if isOwner(viewerUid)
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.joinedAt == resource.data.joinedAt
-        && request.resource.data.lastSeen == request.time
-        && request.resource.data
-            .diff(resource.data)
-            .affectedKeys()
-            .hasOnly([
-              "lastSeen"
-            ]);
-
-      allow delete:
-        if isOwner(viewerUid)
-        || isAdmin()
-        || (
-          loggedIn()
-          && get(
-            /databases/$(database)/documents/streams/$(streamId)
-          ).data.streamerUid == request.auth.uid
-        );
-    }
-'''
-
-          catch_all = '''    match /{document=**} {
-
-      allow read, write:
-        if false;
-    }'''
-
+          viewer_b64 = 'CgogICAgLy8gPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIC8vIFBSRVNFTsOHQSBERSBFU1BFQ1RBRE9SRVMgTkEgWllUUklYCiAgICAvLyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgLy8gUHJlc2Vuw6dhIGxldmUgcGFyYSBjb250YWJpbGl6YXIgdXN1w6FyaW9zIGF1dGVudGljYWRvcyBhdGl2b3MKICAgIC8vIGVtIHVtYSBsaXZlLiBEb2N1bWVudG9zIHNlbSBoZWFydGJlYXQgcmVjZW50ZSBkZWl4YW0gZGUgc2VyCiAgICAvLyBjb25zaWRlcmFkb3MgcGVsbyBmcm9udGVuZCBhcMOzcyA5MCBzZWd1bmRvcy4KCiAgICBtYXRjaCAvc3RyZWFtcy97c3RyZWFtSWR9L3ZpZXdlcnMve3ZpZXdlclVpZH0gewoKICAgICAgYWxsb3cgcmVhZDoKICAgICAgICBpZiBsb2dnZWRJbigpOwoKICAgICAgYWxsb3cgY3JlYXRlOgogICAgICAgIGlmIGlzT3duZXIodmlld2VyVWlkKQogICAgICAgICYmIHJlcXVlc3QucmVzb3VyY2UuZGF0YS51aWQgPT0gdmlld2VyVWlkCiAgICAgICAgJiYgcmVxdWVzdC5yZXNvdXJjZS5kYXRhLmpvaW5lZEF0ID09IHJlcXVlc3QudGltZQogICAgICAgICYmIHJlcXVlc3QucmVzb3VyY2UuZGF0YS5sYXN0U2VlbiA9PSByZXF1ZXN0LnRpbWUKICAgICAgICAmJiByZXF1ZXN0LnJlc291cmNlLmRhdGEua2V5cygpLmhhc09ubHkoWwogICAgICAgICAgInVpZCIsCiAgICAgICAgICAiam9pbmVkQXQiLAogICAgICAgICAgImxhc3RTZWVuIgogICAgICAgIF0pOwoKICAgICAgYWxsb3cgdXBkYXRlOgogICAgICAgIGlmIGlzT3duZXIodmlld2VyVWlkKQogICAgICAgICYmIHJlcXVlc3QucmVzb3VyY2UuZGF0YS51aWQgPT0gcmVzb3VyY2UuZGF0YS51aWQKICAgICAgICAmJiByZXF1ZXN0LnJlc291cmNlLmRhdGEuam9pbmVkQXQgPT0gcmVzb3VyY2UuZGF0YS5qb2luZWRBdAogICAgICAgICYmIHJlcXVlc3QucmVzb3VyY2UuZGF0YS5sYXN0U2VlbiA9PSByZXF1ZXN0LnRpbWUKICAgICAgICAmJiByZXF1ZXN0LnJlc291cmNlLmRhdGEKICAgICAgICAgICAgLmRpZmYocmVzb3VyY2UuZGF0YSkKICAgICAgICAgICAgLmFmZmVjdGVkS2V5cygpCiAgICAgICAgICAgIC5oYXNPbmx5KFsKICAgICAgICAgICAgICAibGFzdFNlZW4iCiAgICAgICAgICAgIF0pOwoKICAgICAgYWxsb3cgZGVsZXRlOgogICAgICAgIGlmIGlzT3duZXIodmlld2VyVWlkKQogICAgICAgIHx8IGlzQWRtaW4oKQogICAgICAgIHx8ICgKICAgICAgICAgIGxvZ2dlZEluKCkKICAgICAgICAgICYmIGdldCgKICAgICAgICAgICAgL2RhdGFiYXNlcy8kKGRhdGFiYXNlKS9kb2N1bWVudHMvc3RyZWFtcy8kKHN0cmVhbUlkKQogICAgICAgICAgKS5kYXRhLnN0cmVhbWVyVWlkID09IHJlcXVlc3QuYXV0aC51aWQKICAgICAgICApOwogICAgfQo='
+          viewer_rules = base64.b64decode(viewer_b64).decode('utf-8')
+          catch_all = '    match /{document=**} {\n\n      allow read, write:\n        if false;\n    }'
           rules_path = Path('firestore.rules')
           rules = rules_path.read_text(encoding='utf-8')
           if 'PRESENÇA DE ESPECTADORES NA ZYTRIX' not in rules:
               if catch_all not in rules:
-                  raise RuntimeError('Bloco final de negação das regras não encontrado')
+                  raise RuntimeError('Bloco final de negação não encontrado')
               rules = rules.replace(catch_all, viewer_rules + '\n' + catch_all, 1)
               rules_path.write_text(rules, encoding='utf-8')
-
           Path('firebase/firestore.rules').write_text(rules, encoding='utf-8')
           Path('REGRAS-PARA-COLAR-NO-FIREBASE.txt').write_text(rules, encoding='utf-8')
 
+          readme_b64 = 'CgojIyBSZWN1cnNvcyBzb2NpYWlzIGUgYWRtaW5pc3RyYcOnw6NvCgotIHNlZ3VpciBlIGRlaXhhciBkZSBzZWd1aXIgc3RyZWFtZXJzIGRpcmV0YW1lbnRlIG5hIHDDoWdpbmEgZGEgbGl2ZTsKLSBjb250YWdlbSBkZSBzZWd1aWRvcmVzIG5vIHBlcmZpbCwgbGl2ZSBlIHBhaW5lbCBkbyBzdHJlYW1lcjsKLSBwcmVzZW7Dp2EgZGUgZXNwZWN0YWRvcmVzIGF1dGVudGljYWRvcyBhdGl2b3MgbmEgWnl0cml4LCBjb20gaGVhcnRiZWF0OwotIHDDoWdpbmEgYG5vdGlmaWNhY29lcy5odG1sYCBjb20gY2FuYWlzIHNlZ3VpZG9zIGUgbGl2ZXMgYXRpdmFzOwotIGF2aXNvIG5hIG5hdmVnYcOnw6NvIHF1YW5kbyB1bSBjYW5hbCBzZWd1aWRvIGVzdMOhIGFvIHZpdm87Ci0gcMOhZ2luYSBgYWRtaW4uaHRtbGAsIHZpc8OtdmVsIGFwZW5hcyBwYXJhIGRvY3VtZW50b3MgYGFkbWlucy97dWlkfWAgYXRpdm9zOwotIHBhaW5lbCBhZG1pbmlzdHJhdGl2byBkZSBsZWl0dXJhIGNvbSB1c3XDoXJpb3MsIHN0cmVhbWVycywgbGl2ZXMsIGNoYXQsIGJhbmltZW50b3MsIFp5IENvaW5zLCBwZWRpZG9zIGUgY2F0ZWdvcmlhczsKLSBvcyBib3TDtWVzIG1hbnVhaXMgKipJbmljaWFyIGxpdmUqKiBlICoqRW5jZXJyYXIgbGl2ZSoqIGNvbnRpbnVhbSBzZW5kbyBhIGZvbnRlIGRlIGNvbnRyb2xlIGRvIHN0YXR1cyBaeXRyaXguCg=='
           readme = Path('README.md')
           readme_text = readme.read_text(encoding='utf-8')
           if '## Recursos sociais e administração' not in readme_text:
-              readme_text += '''
-
-## Recursos sociais e administração
-
-- seguir e deixar de seguir streamers diretamente na página da live;
-- contagem de seguidores no perfil, live e painel do streamer;
-- presença de espectadores autenticados ativos na Zytrix, com heartbeat;
-- página `notificacoes.html` com canais seguidos e lives ativas;
-- aviso na navegação quando um canal seguido está ao vivo;
-- página `admin.html`, visível apenas para documentos `admins/{uid}` ativos;
-- painel administrativo de leitura com usuários, streamers, lives, chat, banimentos, Zy Coins, pedidos e categorias;
-- os botões manuais **Iniciar live** e **Encerrar live** continuam sendo a fonte de controle do status Zytrix.
-'''
+              readme_text += base64.b64decode(readme_b64).decode('utf-8')
               readme.write_text(readme_text, encoding='utf-8')
+          PY
 
-      - name: Verificações básicas
+      - name: Verificacoes basicas
         shell: bash
         run: |
           test -f assets/js/social.js
@@ -170,7 +97,7 @@ jobs:
           grep -q "profile-social.js" perfil.html
           grep -q "streamer-dashboard.js" config-live.html
 
-      - name: Commitar integração
+      - name: Commitar integracao
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
