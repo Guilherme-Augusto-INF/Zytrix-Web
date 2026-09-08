@@ -2,7 +2,7 @@ name: Export Vercel Site
 
 on:
   push:
-    branches: [main]
+    branches: [main, stripe-zycoins]
     paths:
       - "*.html"
       - "robots.txt"
