@@ -1,0 +1,190 @@
+name: Zytrix AEO GEO Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  aeo-geo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validar SEO técnico, conteúdo e structured data
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          import json
+          import re
+          import xml.etree.ElementTree as ET
+
+          base = 'https://zytrix-web.vercel.app'
+          public_pages = [
+              'index.html',
+              'ao-vivo.html',
+              'categorias.html',
+              'recursos.html',
+              'faq.html',
+              'sobre.html',
+          ]
+          errors = []
+
+          class HeadParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.metas = []
+                  self.links = []
+                  self.h1 = 0
+                  self.h2 = 0
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if tag == 'meta': self.metas.append(attrs)
+                  if tag == 'link': self.links.append(attrs)
+                  if tag == 'h1': self.h1 += 1
+                  if tag == 'h2': self.h2 += 1
+
+          def meta_value(parser, *, name=None, prop=None):
+              for item in parser.metas:
+                  if name and item.get('name', '').lower() == name.lower():
+                      return item.get('content', '')
+                  if prop and item.get('property', '').lower() == prop.lower():
+                      return item.get('content', '')
+              return ''
+
+          def canonical(parser):
+              for item in parser.links:
+                  if item.get('rel', '').lower() == 'canonical':
+                      return item.get('href', '')
+              return ''
+
+          for file_name in public_pages:
+              path = Path(file_name)
+              if not path.exists():
+                  errors.append(f'Página pública ausente: {file_name}')
+                  continue
+              html = path.read_text(encoding='utf-8')
+              parser = HeadParser()
+              parser.feed(html)
+
+              if not meta_value(parser, name='description'):
+                  errors.append(f'{file_name}: meta description ausente')
+              robots = meta_value(parser, name='robots').lower().replace(' ', '')
+              googlebot = meta_value(parser, name='googlebot').lower().replace(' ', '')
+              if 'index' not in robots or 'follow' not in robots or 'noindex' in robots:
+                  errors.append(f'{file_name}: robots não está index,follow')
+              if 'index' not in googlebot or 'follow' not in googlebot or 'noindex' in googlebot:
+                  errors.append(f'{file_name}: googlebot não está index,follow')
+              if not canonical(parser):
+                  errors.append(f'{file_name}: canonical ausente')
+              for prop in ('og:title', 'og:description', 'og:url'):
+                  if not meta_value(parser, prop=prop):
+                      errors.append(f'{file_name}: {prop} ausente')
+              if parser.h1 != 1:
+                  errors.append(f'{file_name}: esperado exatamente 1 h1, encontrado {parser.h1}')
+              if parser.h2 < 1:
+                  errors.append(f'{file_name}: nenhum h2 encontrado')
+              if 'noindex' in html.lower():
+                  errors.append(f'{file_name}: noindex encontrado no HTML')
+
+          # Structured data deve ser JSON válido.
+          jsonld_by_file = {}
+          for file_name in ('index.html', 'sobre.html', 'recursos.html', 'faq.html', 'categorias.html'):
+              html = Path(file_name).read_text(encoding='utf-8')
+              blocks = re.findall(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.I | re.S)
+              if not blocks:
+                  errors.append(f'{file_name}: JSON-LD ausente')
+                  continue
+              parsed = []
+              for block in blocks:
+                  try:
+                      parsed.append(json.loads(block))
+                  except json.JSONDecodeError as exc:
+                      errors.append(f'{file_name}: JSON-LD inválido: {exc}')
+              jsonld_by_file[file_name] = parsed
+
+          def collect_types(value):
+              found = set()
+              if isinstance(value, dict):
+                  t = value.get('@type')
+                  if isinstance(t, str): found.add(t)
+                  if isinstance(t, list): found.update(x for x in t if isinstance(x, str))
+                  for child in value.values(): found.update(collect_types(child))
+              elif isinstance(value, list):
+                  for child in value: found.update(collect_types(child))
+              return found
+
+          index_types = collect_types(jsonld_by_file.get('index.html', []))
+          for required in ('WebSite', 'Organization', 'WebApplication'):
+              if required not in index_types:
+                  errors.append(f'index.html: structured data {required} ausente')
+
+          faq_types = collect_types(jsonld_by_file.get('faq.html', []))
+          if 'FAQPage' not in faq_types:
+              errors.append('faq.html: FAQPage ausente')
+
+          for file_name in ('sobre.html', 'recursos.html', 'faq.html', 'categorias.html'):
+              if 'BreadcrumbList' not in collect_types(jsonld_by_file.get(file_name, [])):
+                  errors.append(f'{file_name}: BreadcrumbList ausente')
+
+          # FAQPage só é válido aqui porque perguntas e respostas estão visíveis na própria página.
+          faq_html = Path('faq.html').read_text(encoding='utf-8')
+          visible = re.sub(r'<script.*?</script>', ' ', faq_html, flags=re.I | re.S)
+          visible = re.sub(r'<[^>]+>', ' ', visible)
+          required_questions = [
+              'O que é Zytrix?',
+              'Para que serve a Zytrix?',
+              'Quais funcionalidades a Zytrix possui?',
+              'Como criar uma conta na Zytrix?',
+              'Como assistir lives na Zytrix?',
+              'Como transmitir na Zytrix?',
+              'Quais categorias existem na Zytrix?',
+              'Como funcionam o perfil e a configuração de live?',
+          ]
+          for question in required_questions:
+              if question not in visible:
+                  errors.append(f'faq.html: pergunta visível ausente: {question}')
+
+          robots = Path('robots.txt').read_text(encoding='utf-8')
+          if 'User-agent: *' not in robots or 'Allow: /' not in robots:
+              errors.append('robots.txt não libera rastreamento geral')
+          if f'Sitemap: {base}/sitemap.xml' not in robots:
+              errors.append('robots.txt não aponta para sitemap.xml')
+          if 'Disallow: /' in robots:
+              errors.append('robots.txt bloqueia o site inteiro')
+
+          tree = ET.parse('sitemap.xml')
+          ns = {'s': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+          urls = {el.text.strip() for el in tree.findall('.//s:loc', ns) if el.text}
+          required_urls = {
+              f'{base}/',
+              f'{base}/ao-vivo.html',
+              f'{base}/categorias.html',
+              f'{base}/recursos.html',
+              f'{base}/faq.html',
+              f'{base}/sobre.html',
+          }
+          missing = required_urls - urls
+          if missing:
+              errors.append('sitemap.xml sem URLs: ' + ', '.join(sorted(missing)))
+
+          verification = Path('google87f94d9d56cacf74.html').read_text(encoding='utf-8')
+          if verification != 'google-site-verification: google87f94d9d56cacf74.html':
+              errors.append('arquivo de verificação do Google foi alterado')
+
+          ui = Path('assets/js/ui.js').read_text(encoding='utf-8')
+          for href in ('recursos.html', 'faq.html', 'categorias.html', 'sobre.html'):
+              if href not in ui:
+                  errors.append(f'ui.js: link interno ausente para {href}')
+
+          if errors:
+              raise SystemExit('\n'.join(errors))
+          print('AEO/GEO, SEO técnico, structured data, sitemap e rastreabilidade: PASS')
+          PY
