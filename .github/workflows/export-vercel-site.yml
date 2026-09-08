@@ -1,0 +1,34 @@
+name: Export Vercel Site
+
+on:
+  push:
+    paths:
+      - ".github/workflows/export-vercel-site.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Preparar arquivos de deploy
+        shell: bash
+        run: |
+          set -e
+          mkdir -p export/assets/css export/assets/js
+          cp index.html ao-vivo.html categorias.html categoria.html live.html sobre.html login.html registro.html recuperar-senha.html perfil.html config-live.html loja.html pagamento.html sair.html notificacoes.html admin.html export/
+          cp google87f94d9d56cacf74.html robots.txt sitemap.xml vercel.json export/
+          cp assets/css/*.css export/assets/css/
+          cp assets/js/*.js export/assets/js/
+
+      - name: Upload do pacote
+        uses: actions/upload-artifact@v4
+        with:
+          name: zytrix-vercel-site
+          path: export
+          if-no-files-found: error
+          retention-days: 1
