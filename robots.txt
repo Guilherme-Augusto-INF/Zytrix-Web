@@ -1,3 +1,4 @@
+# Domínio oficial: https://zytrix-lives.vercel.app
 User-agent: *
 Allow: /
 
