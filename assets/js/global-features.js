@@ -110,6 +110,7 @@ function showSupportToast(transaction) {
   sessionStorage.setItem(key, '1');
 
   const amount = Number(transaction.amount || 0);
+  document.querySelector('#zytrix-live-toast')?.remove();
   document.querySelector('#zytrix-support-toast')?.remove();
   const toast = document.createElement('a');
   toast.id = 'zytrix-support-toast';
@@ -139,7 +140,7 @@ function refreshNotifications() {
     count.classList.toggle('hidden', total === 0);
   }
 
-  if (followedLive.length) {
+  if (followedLive.length && !document.querySelector('#zytrix-support-toast')) {
     showLiveToast(followedLive[0]);
   }
 }
