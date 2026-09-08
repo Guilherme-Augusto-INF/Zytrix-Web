@@ -61,7 +61,7 @@ export function footer() {
           <span>Zytrix</span>
         </a>
 
-        <span>© 2026 Zytrix. Projeto acadêmico de TCC.</span>
+        <span>© 2026 Zytrix. Todos os direitos reservados.</span>
 
         <div class="footer-links">
           <a href="recursos.html">Recursos</a>
