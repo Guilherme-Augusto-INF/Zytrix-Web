@@ -2,14 +2,19 @@ name: Export Vercel Site
 
 on:
   push:
-    branches: [zycoin-support-notifications]
+    branches: [main]
     paths:
+      - "*.html"
+      - "robots.txt"
+      - "sitemap.xml"
+      - "vercel.json"
+      - "assets/css/**"
+      - "assets/js/**"
       - ".github/workflows/export-vercel-site.yml"
-      - "scripts/sync-merged-firestore-rules.py"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   export:
@@ -17,34 +22,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Preparar arquivos de deploy
+        shell: bash
+        run: |
+          set -e
+          mkdir -p export/assets/css export/assets/js
+          cp index.html ao-vivo.html categorias.html categoria.html live.html recursos.html faq.html sobre.html login.html registro.html recuperar-senha.html perfil.html config-live.html loja.html pagamento.html sair.html notificacoes.html admin.html export/
+          cp termos.html privacidade.html diretrizes-da-comunidade.html denuncias-e-moderacao.html conteudo-proibido.html politicas.html denunciar.html moderacao.html export/
+          cp google87f94d9d56cacf74.html robots.txt sitemap.xml vercel.json export/
+          cp assets/css/*.css export/assets/css/
+          cp assets/js/*.js export/assets/js/
+
+      - name: Upload do pacote
+        uses: actions/upload-artifact@v4
         with:
-          ref: zycoin-support-notifications
-
-      - name: Sincronizar regras atuais com alertas de apoio
-        run: python3 scripts/sync-merged-firestore-rules.py
-
-      - name: Validar cópias
-        shell: bash
-        run: |
-          set -e
-          cmp -s firestore.rules firebase/firestore.rules
-          cmp -s firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
-          grep -q 'validSupportAlertSound' firestore.rules
-          grep -q 'match /notificationState/{stateId}' firestore.rules
-          grep -q 'match /supportAlerts/{alertId}' firestore.rules
-          grep -q 'supportAlertSound' firestore.rules
-          grep -q 'matureContent' firestore.rules
-
-      - name: Commit das regras mescladas
-        shell: bash
-        run: |
-          set -e
-          if git diff --quiet; then
-            echo "Nenhuma alteração necessária"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add firestore.rules firebase/firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
-          git commit -m "fix: merge live alerts into current Firestore security rules"
-          git push origin HEAD:zycoin-support-notifications
+          name: zytrix-vercel-site
+          path: export
+          if-no-files-found: error
+          retention-days: 1
