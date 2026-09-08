@@ -14,7 +14,7 @@ function ensureStylesheet() {
 
 function addPrimaryNavigation() {
   const nav = document.querySelector('.nav-links');
-  if (!nav) return;
+  if (!nav) return false;
   if (!nav.querySelector('[data-platform-nav="explore"]')) {
     const explore = document.createElement('a');
     explore.href = 'explorar.html';
@@ -29,6 +29,22 @@ function addPrimaryNavigation() {
     clips.textContent = 'Clipes';
     nav.insertBefore(clips, nav.querySelector('a[href="sobre.html"]') || null);
   }
+  return true;
+}
+
+function addFooterNavigation() {
+  const top = document.querySelector('.footer-links');
+  if (top) {
+    [['Explorar','explorar.html','explore'],['Clipes','clips.html','clips'],['Status','status.html','status'],['Roadmap','roadmap.html','roadmap']].forEach(([label, href, key]) => {
+      if (top.querySelector(`[data-platform-footer="${key}"]`)) return;
+      const link = document.createElement('a');
+      link.href = href;
+      link.textContent = label;
+      link.dataset.platformFooter = key;
+      top.appendChild(link);
+    });
+  }
+  return Boolean(top);
 }
 
 async function addCreatorCenter(uid) {
@@ -77,10 +93,11 @@ function applyMiniMode() {
   document.title = `Mini player — ${document.title}`;
 }
 
-function waitForHeader() {
+function waitForLayout() {
   const attempt = () => {
-    addPrimaryNavigation();
-    return Boolean(document.querySelector('.nav-links'));
+    const headerReady = addPrimaryNavigation();
+    const footerReady = addFooterNavigation();
+    return headerReady && footerReady;
   };
   if (attempt()) return;
   const observer = new MutationObserver(() => {
@@ -92,7 +109,7 @@ function waitForHeader() {
 
 ensureStylesheet();
 applyMiniMode();
-waitForHeader();
+waitForLayout();
 
 onAuthStateChanged(auth, user => {
   stopProgress?.();
