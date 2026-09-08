@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Zytrix — Roadmap</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/features.css">
+  <link rel="stylesheet" href="assets/css/platform.css">
+  <link rel="stylesheet" href="assets/css/policies.css">
+  <meta name="description" content="Roadmap público de recursos concluídos, em validação e planejados para a Zytrix.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://zytrix-lives.vercel.app/roadmap.html">
+</head>
+<body>
+  <div data-header></div>
+  <main class="main">
+    <div class="container platform-shell">
+      <section class="card panel"><div class="eyebrow">TRANSPARÊNCIA DE PRODUTO</div><h1>Roadmap Zytrix</h1><p class="muted">O roadmap separa o que existe de verdade do que ainda depende de infraestrutura externa. Isso evita apresentar protótipos como funcionalidades concluídas.</p></section>
+      <div class="roadmap-columns">
+        <section class="roadmap-column"><h2>✓ Concluído</h2>
+          <article class="roadmap-card"><strong>Lives Twitch + Kick</strong><span class="muted">Players incorporados, chat Zytrix, seguidores e presença.</span></article>
+          <article class="roadmap-card"><strong>Zy Coins e alertas</strong><span class="muted">Carteira, apoio atômico, alerta coletivo, som e notificações.</span></article>
+          <article class="roadmap-card"><strong>Centro do Criador</strong><span class="muted">Metas, alertas, moderação, agenda, recompensas e analytics.</span></article>
+          <article class="roadmap-card"><strong>Descoberta e clipes</strong><span class="muted">Explorar personalizado, categorias favoritas e feed vertical de momentos.</span></article>
+          <article class="roadmap-card"><strong>Gamificação</strong><span class="muted">XP, níveis, streak e conquistas cosméticas.</span></article>
+        </section>
+        <section class="roadmap-column"><h2>◐ Em validação</h2>
+          <article class="roadmap-card"><strong>Stripe Checkout</strong><span class="muted">Produtos de teste existem; backend/webhook seguem isolados até validação completa.</span></article>
+          <article class="roadmap-card"><strong>Membros pagos</strong><span class="muted">Modo members-only funciona com lista manual; Billing será conectado depois.</span></article>
+          <article class="roadmap-card"><strong>AutoMod avançado</strong><span class="muted">Links, acesso e slow mode são reforçados no Firestore. Linguagem personalizada ainda precisa de backend para ser incontornável.</span></article>
+          <article class="roadmap-card"><strong>VOD/clipes de mídia</strong><span class="muted">A Zytrix salva momentos e links; mídia real depende da Twitch/Kick ou ingest próprio.</span></article>
+        </section>
+        <section class="roadmap-column"><h2>→ Próxima infraestrutura</h2>
+          <article class="roadmap-card"><strong>Zytrix Direct</strong><span class="muted">OBS → servidor de mídia próprio → player Zytrix.</span></article>
+          <article class="roadmap-card"><strong>Transcoding e CDN</strong><span class="muted">Qualidades 1080p/720p/480p e escala para mais espectadores.</span></article>
+          <article class="roadmap-card"><strong>Analytics de retenção</strong><span class="muted">Métricas de player minuto a minuto quando houver API/ingest próprio.</span></article>
+          <article class="roadmap-card"><strong>Picture-in-Picture nativo</strong><span class="muted">Quando o player de origem permitir; hoje o mini player usa uma janela dedicada segura.</span></article>
+        </section>
+      </div>
+      <section class="card panel"><h2>Princípio do projeto</h2><p class="muted">A Zytrix não tenta burlar login, idade, cookies ou políticas de Twitch/Kick e não transforma recursos planejados em alegações de produção.</p><div class="live-interaction-row"><a class="btn" href="status.html">Ver status</a><a class="btn" href="explorar.html">Explorar a plataforma</a></div></section>
+    </div>
+  </main>
+  <div data-footer></div>
+  <script type="module">import { header, footer } from './assets/js/ui.js'; header(); footer();</script>
+  <script type="module" src="assets/js/global-features.js"></script>
+</body>
+</html>
