@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
-import { adminDb } from './_lib/firebase-admin.js';
-import { getCoinPackage, INITIAL_WALLET_BONUS } from './_lib/zycoins.js';
+import { adminDb } from '../server/firebase-admin.js';
+import { getCoinPackage, INITIAL_WALLET_BONUS } from '../server/zycoins.js';
 
 export const config = {
   api: {
