@@ -1,0 +1,73 @@
+name: Zytrix Quality Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validar sintaxe JavaScript
+        shell: bash
+        run: |
+          set -e
+          for file in assets/js/*.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
+
+      - name: Validar referencias locais do HTML
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+
+          class Parser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.refs = []
+              def handle_starttag(self, tag, attrs):
+                  data = dict(attrs)
+                  if tag == 'script' and data.get('src'):
+                      self.refs.append(data['src'])
+                  if tag == 'link' and data.get('href'):
+                      self.refs.append(data['href'])
+
+          errors = []
+          for html in Path('.').glob('*.html'):
+              parser = Parser()
+              parser.feed(html.read_text(encoding='utf-8'))
+              for ref in parser.refs:
+                  if ref.startswith(('http://', 'https://', '//')):
+                      continue
+                  clean = ref.split('?', 1)[0].split('#', 1)[0]
+                  if clean and not Path(clean).exists():
+                      errors.append(f'{html}: referencia ausente: {ref}')
+          if errors:
+              raise SystemExit('\n'.join(errors))
+          PY
+
+      - name: Validar arquivos Firebase e recursos novos
+        shell: bash
+        run: |
+          set -e
+          cmp -s firestore.rules firebase/firestore.rules
+          cmp -s firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+          grep -q "PRESENÇA DE ESPECTADORES NA ZYTRIX" firestore.rules
+          grep -q "global-features.js" index.html
+          grep -q "live-social.js" live.html
+          grep -q "profile-social.js" perfil.html
+          grep -q "streamer-dashboard.js" config-live.html
+          test -f notificacoes.html
+          test -f admin.html
+          test -f assets/css/features.css
