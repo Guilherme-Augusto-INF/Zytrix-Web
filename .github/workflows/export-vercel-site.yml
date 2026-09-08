@@ -2,8 +2,16 @@ name: Export Vercel Site
 
 on:
   push:
+    branches: [main]
     paths:
+      - "*.html"
+      - "robots.txt"
+      - "sitemap.xml"
+      - "vercel.json"
+      - "assets/css/**"
+      - "assets/js/**"
       - ".github/workflows/export-vercel-site.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -20,7 +28,7 @@ jobs:
         run: |
           set -e
           mkdir -p export/assets/css export/assets/js
-          cp index.html ao-vivo.html categorias.html categoria.html live.html sobre.html login.html registro.html recuperar-senha.html perfil.html config-live.html loja.html pagamento.html sair.html notificacoes.html admin.html export/
+          cp index.html ao-vivo.html categorias.html categoria.html live.html recursos.html faq.html sobre.html login.html registro.html recuperar-senha.html perfil.html config-live.html loja.html pagamento.html sair.html notificacoes.html admin.html export/
           cp google87f94d9d56cacf74.html robots.txt sitemap.xml vercel.json export/
           cp assets/css/*.css export/assets/css/
           cp assets/js/*.js export/assets/js/
