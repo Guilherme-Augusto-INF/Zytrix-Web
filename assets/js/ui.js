@@ -1,10 +1,10 @@
 import { auth, onAuthStateChanged } from './firebase.js';
 import { parseStreamingSource, streamingPlatformLabel } from './streaming.js';
+
 export function header(active = '') {
     const element = document.querySelector('[data-header]');
-    if (!element) {
-        return;
-    }
+    if (!element) return;
+
     element.innerHTML = `
     <header class="site-header">
       <div class="container nav">
@@ -17,52 +17,43 @@ export function header(active = '') {
           <a class="${active === 'inicio' ? 'active' : ''}" href="index.html">Início</a>
           <a class="${active === 'categorias' ? 'active' : ''}" href="categorias.html">Categorias</a>
           <a class="${active === 'ao-vivo' ? 'active' : ''}" href="ao-vivo.html">Ao Vivo</a>
+          <a class="${active === 'recursos' ? 'active' : ''}" href="recursos.html">Recursos</a>
           <a class="${active === 'sobre' ? 'active' : ''}" href="sobre.html">Sobre</a>
         </nav>
 
         <div class="nav-actions">
-          <a
-            class="icon-link"
-            title="Zy Coins"
-            aria-label="Abrir loja de Zy Coins"
-            href="loja.html"
-          >
-            ◈
-          </a>
+          <a class="icon-link" title="Zy Coins" aria-label="Abrir loja de Zy Coins" href="loja.html">◈</a>
 
           <div id="guest-nav" class="guest-nav">
             <a class="btn btn-ghost" href="login.html">Entrar</a>
             <a class="btn btn-primary" href="registro.html">Registrar</a>
           </div>
 
-          <a id="profile-nav" class="btn btn-primary hidden" href="perfil.html">
-            Perfil
-          </a>
+          <a id="profile-nav" class="btn btn-primary hidden" href="perfil.html">Perfil</a>
         </div>
       </div>
     </header>
   `;
+
     onAuthStateChanged(auth, user => {
         const guest = document.querySelector('#guest-nav');
         const profile = document.querySelector('#profile-nav');
-        if (!guest || !profile) {
-            return;
-        }
+        if (!guest || !profile) return;
+
         if (user) {
             guest.classList.add('hidden');
             profile.classList.remove('hidden');
-        }
-        else {
+        } else {
             guest.classList.remove('hidden');
             profile.classList.add('hidden');
         }
     });
 }
+
 export function footer() {
     const element = document.querySelector('[data-footer]');
-    if (!element) {
-        return;
-    }
+    if (!element) return;
+
     element.innerHTML = `
     <footer class="site-footer">
       <div class="container footer-inner">
@@ -71,23 +62,24 @@ export function footer() {
           <span>Zytrix</span>
         </a>
 
-        <span>© 2026 Zytrix. Todos os direitos reservados.</span>
+        <span>© 2026 Zytrix. Projeto acadêmico de TCC.</span>
 
         <div class="footer-links">
+          <a href="recursos.html">Recursos</a>
+          <a href="faq.html">FAQ</a>
+          <a href="categorias.html">Categorias</a>
           <a href="sobre.html">Sobre</a>
-          <span>Termos</span>
-          <span>Privacidade</span>
         </div>
       </div>
     </footer>
   `;
 }
+
 export function liveCard(live) {
     const initial = (live.username || 'S').charAt(0).toUpperCase();
     const source = parseStreamingSource(live.playbackURL || '');
-    const platform = source
-        ? streamingPlatformLabel(source.platform)
-        : '';
+    const platform = source ? streamingPlatformLabel(source.platform) : '';
+
     return `
     <article class="card live-card" data-live-id="${escapeAttr(live.id)}">
       <div class="thumb">
@@ -101,10 +93,7 @@ export function liveCard(live) {
         ? `<span class="platform-badge platform-${source.platform} card-platform">${escapeHtml(platform)}</span>`
         : ''}
 
-        <span class="viewers">
-          👁 ${Number(live.viewerCount || 0).toLocaleString('pt-BR')}
-        </span>
-
+        <span class="viewers">👁 ${Number(live.viewerCount || 0).toLocaleString('pt-BR')}</span>
         <span class="play">▶</span>
       </div>
 
@@ -122,6 +111,7 @@ export function liveCard(live) {
     </article>
   `;
 }
+
 export function escapeHtml(value = '') {
     return String(value).replace(/[&<>'"]/g, character => ({
         '&': '&amp;',
@@ -131,9 +121,11 @@ export function escapeHtml(value = '') {
         '"': '&quot;'
     })[character]);
 }
+
 export function escapeAttr(value = '') {
     return escapeHtml(value);
 }
+
 export const categories = {
     Gaming: ['Ação / Aventura', 'RPG', 'Esportes', 'Simulação'],
     Música: ['Rock', 'Sertanejo', 'Eletrônica', 'Funk'],
@@ -144,6 +136,7 @@ export const categories = {
     Podcasts: ['Conversas', 'Entrevistas', 'Notícias', 'Entretenimento'],
     IRL: ['Viagens', 'Eventos', 'Vida Cotidiana', 'Exploração']
 };
+
 export const icons = {
     Gaming: '🎮',
     Música: '🎵',
