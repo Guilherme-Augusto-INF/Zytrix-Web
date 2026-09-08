@@ -46,3 +46,13 @@ Alvo ausente, removido, contexto errado, auto-denúncia, live offline, perfil, m
 Páginas podem ser disponibilizadas como minutas explícitas. Denúncias e aceite não devem ser ativados enquanto faltarem responsáveis, canal, decisão etária/controles, publicação e teste das regras. Documentos incompletos ficam fora do sitemap e com noindex. Ativação exige atualizar documentos, preservar versão, rever sitemap/headers e validar o fluxo inteiro.
 
 PRODUCTION READINESS DO SISTEMA COMPLETO: FAIL.
+
+## Publicação e smoke test final
+
+Deployment de produção READY: dpl_7PVk6345DesoWswE3iiHSoTzZyHw. Alias zytrix-lives.vercel.app confirmado no deployment novo, junto dos outros aliases do mesmo projeto. As seis rotas de políticas retornaram HTTP 200 em consultas sequenciais do conector Vercel. Todas foram abertas também no navegador. Footer e links do cadastro confirmados, envio anônimo desabilitado, fila restrita e rota inexistente 404. Resultado estruturado em production-smoke.json.
+
+GitHub: PR #1, branch feat/platform-governance. Commit e6e868e3391a26be66bb3748dcf1cdbf7419529b aprovado nos checks Zytrix Quality Check, Zytrix AEO GEO Check e Governance checks. A checagem legada de referências precisou ser corrigida para reconhecer caminhos absolutos a partir da raiz do site; não foram ignorados links quebrados.
+
+Atalho Pular para o conteúdo testado por teclado no preview: navegação para #principal e foco no main. A captura visual final confirmou remoção da numeração duplicada no índice. Mobile real e leitor de tela permanecem não verificados.
+
+Páginas publicadas como minutas, com noindex. Não foi ativada a coleta de denúncias nem solicitado aceite contratual. Regras Firebase novas continuam apenas no repositório e emulador, não publicadas no projeto real. A entrega técnica parcial NÃO muda o veredito FAIL do sistema completo.
