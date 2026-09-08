@@ -2,12 +2,15 @@ name: Export Vercel Site
 
 on:
   push:
-    branches: [main]
+    branches: [main, stripe-zycoins]
     paths:
       - "*.html"
       - "robots.txt"
       - "sitemap.xml"
       - "vercel.json"
+      - "package.json"
+      - "api/**"
+      - "server/**"
       - "assets/css/**"
       - "assets/js/**"
       - ".github/workflows/export-vercel-site.yml"
@@ -30,9 +33,21 @@ jobs:
           mkdir -p export/assets/css export/assets/js
           cp index.html ao-vivo.html categorias.html categoria.html live.html recursos.html faq.html sobre.html login.html registro.html recuperar-senha.html perfil.html config-live.html loja.html pagamento.html sair.html notificacoes.html admin.html export/
           cp termos.html privacidade.html diretrizes-da-comunidade.html denuncias-e-moderacao.html conteudo-proibido.html politicas.html denunciar.html moderacao.html export/
-          cp google87f94d9d56cacf74.html robots.txt sitemap.xml vercel.json export/
+          cp google87f94d9d56cacf74.html robots.txt sitemap.xml vercel.json package.json export/
           cp assets/css/*.css export/assets/css/
           cp assets/js/*.js export/assets/js/
+          cp -R api export/api
+          cp -R server export/server
+
+      - name: Verificar backend Stripe no pacote
+        shell: bash
+        run: |
+          set -e
+          test -f export/api/create-checkout-session.js
+          test -f export/api/stripe-webhook.js
+          test -f export/server/firebase-admin.js
+          test -f export/server/zycoins.js
+          test -f export/package.json
 
       - name: Upload do pacote
         uses: actions/upload-artifact@v4
