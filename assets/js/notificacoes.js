@@ -7,6 +7,8 @@ import {
   getDoc,
   onSnapshot,
   query,
+  setDoc,
+  serverTimestamp,
   where
 } from './firebase.js';
 import { header, footer, escapeHtml } from './ui.js';
@@ -29,10 +31,6 @@ let stopChannels = null;
 let stopStreams = null;
 let stopSupportTransactions = null;
 
-function seenStorageKey(uid) {
-  return `zytrix-support-seen:${uid}`;
-}
-
 function transactionTime(transaction) {
   const date = transaction?.createdAt?.toDate?.();
   return date ? date.getTime() : 0;
@@ -50,21 +48,21 @@ function formatSupportTime(timestamp) {
   });
 }
 
-function markSupportNotificationsSeen(uid) {
+async function markSupportNotificationsSeen(uid) {
   if (!uid || !supportTransactions.length) return;
 
   try {
-    const previous = JSON.parse(localStorage.getItem(seenStorageKey(uid)) || '[]');
-    const seen = new Set(Array.isArray(previous) ? previous : []);
-    supportTransactions.forEach(transaction => {
-      if (transaction.id) seen.add(transaction.id);
-    });
-    localStorage.setItem(seenStorageKey(uid), JSON.stringify([...seen]));
-    window.dispatchEvent(new CustomEvent('zytrix-support-seen-updated', {
-      detail: { uid }
-    }));
+    await setDoc(
+      doc(db, 'users', uid, 'notificationState', 'zycoins'),
+      {
+        uid,
+        lastSupportSeenAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      },
+      { merge: true }
+    );
   } catch (error) {
-    console.warn('Não foi possível salvar o estado das notificações.', error);
+    console.warn('Não foi possível sincronizar o estado das notificações.', error);
   }
 }
 
@@ -288,7 +286,7 @@ onAuthStateChanged(auth, user => {
       if (version !== supportRenderVersion || activeUser?.uid !== user.uid) return;
 
       render();
-      markSupportNotificationsSeen(user.uid);
+      await markSupportNotificationsSeen(user.uid);
     },
     error => {
       console.error('Não foi possível carregar os apoios em Zy Coins.', error);
