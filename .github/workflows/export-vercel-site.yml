@@ -10,6 +10,7 @@ on:
       - "vercel.json"
       - "package.json"
       - "api/**"
+      - "server/**"
       - "assets/css/**"
       - "assets/js/**"
       - ".github/workflows/export-vercel-site.yml"
@@ -36,6 +37,7 @@ jobs:
           cp assets/css/*.css export/assets/css/
           cp assets/js/*.js export/assets/js/
           cp -R api export/api
+          cp -R server export/server
 
       - name: Verificar backend Stripe no pacote
         shell: bash
@@ -43,8 +45,8 @@ jobs:
           set -e
           test -f export/api/create-checkout-session.js
           test -f export/api/stripe-webhook.js
-          test -f export/api/_lib/firebase-admin.js
-          test -f export/api/_lib/zycoins.js
+          test -f export/server/firebase-admin.js
+          test -f export/server/zycoins.js
           test -f export/package.json
 
       - name: Upload do pacote
