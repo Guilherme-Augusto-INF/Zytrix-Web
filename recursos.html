@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Zytrix — Recursos e funcionamento</title>
+  <meta name="description" content="Conheça as funcionalidades reais da Zytrix: contas, perfis, Twitch e Kick, categorias, chat, seguidores, configuração manual de live e Zy Coins no protótipo.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://zytrix-web.vercel.app/recursos.html">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Zytrix">
+  <meta property="og:title" content="Zytrix — Recursos e funcionamento">
+  <meta property="og:description" content="Conheça as funcionalidades reais da Zytrix e como a plataforma funciona para espectadores e streamers.">
+  <meta property="og:url" content="https://zytrix-web.vercel.app/recursos.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Zytrix — Recursos e funcionamento">
+  <meta name="twitter:description" content="Conheça as funcionalidades reais da Zytrix e como a plataforma funciona para espectadores e streamers.">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/features.css">
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@graph":[
+      {
+        "@type":"WebPage",
+        "@id":"https://zytrix-web.vercel.app/recursos.html#page",
+        "url":"https://zytrix-web.vercel.app/recursos.html",
+        "name":"Recursos e funcionamento da Zytrix",
+        "description":"Descrição pública e factual das funcionalidades disponíveis na plataforma web Zytrix.",
+        "inLanguage":"pt-BR",
+        "isPartOf":{"@id":"https://zytrix-web.vercel.app/#website"},
+        "about":{"@id":"https://zytrix-web.vercel.app/#app"}
+      },
+      {
+        "@type":"BreadcrumbList",
+        "itemListElement":[
+          {"@type":"ListItem","position":1,"name":"Início","item":"https://zytrix-web.vercel.app/"},
+          {"@type":"ListItem","position":2,"name":"Recursos","item":"https://zytrix-web.vercel.app/recursos.html"}
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div data-header></div>
+  <main class="main">
+    <div class="container">
+      <nav aria-label="Breadcrumb" class="muted" style="margin-bottom:18px"><a href="index.html">Início</a> / Recursos</nav>
+
+      <header class="hero">
+        <div class="eyebrow">Funcionalidades reais</div>
+        <h1>Como a <span>Zytrix funciona</span></h1>
+        <p>Esta página descreve os recursos disponíveis na versão web atual da Zytrix. O conteúdo é público para que usuários, mecanismos de busca e sistemas de resposta consigam entender o produto sem precisar entrar em uma conta.</p>
+      </header>
+
+      <section class="section" aria-labelledby="visao-geral">
+        <h2 id="visao-geral">Visão geral</h2>
+        <p>A Zytrix funciona como uma camada de descoberta, organização e comunidade para livestreams. O vídeo vem da Twitch ou Kick; a Zytrix exibe o player correspondente e mantém dados próprios como perfil, título da live, categoria, chat, seguidores e status manual da transmissão.</p>
+      </section>
+
+      <section class="section" aria-labelledby="para-espectadores">
+        <div class="eyebrow">Espectadores</div>
+        <h2 id="para-espectadores">O que um espectador pode fazer?</h2>
+        <div class="grid grid-4">
+          <article class="card panel"><h3>Descobrir lives</h3><p class="muted">As páginas Início e Ao Vivo mostram transmissões marcadas como ativas na Zytrix.</p></article>
+          <article class="card panel"><h3>Explorar categorias</h3><p class="muted">As lives são classificadas em categorias e subcategorias como Gaming, Música, Tecnologia e IRL.</p></article>
+          <article class="card panel"><h3>Assistir</h3><p class="muted">A página da live incorpora o player da Twitch ou Kick informado pelo streamer.</p></article>
+          <article class="card panel"><h3>Interagir</h3><p class="muted">Usuários autenticados podem conversar no chat, seguir streamers e acompanhar notificações de lives seguidas.</p></article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="conta-perfil">
+        <div class="eyebrow">Conta e identidade</div>
+        <h2 id="conta-perfil">Conta e perfil</h2>
+        <div class="grid grid-2">
+          <div class="card panel">
+            <h3>Como criar conta</h3>
+            <p class="muted">O cadastro permite e-mail e senha ou autenticação com Google. No cadastro por e-mail, a aplicação envia uma mensagem de verificação. Depois do primeiro acesso, são criados os documentos básicos do usuário e do perfil no Firestore.</p>
+            <a href="registro.html">Abrir página de registro →</a>
+          </div>
+          <div class="card panel">
+            <h3>Perfil</h3>
+            <p class="muted">O perfil contém nome de usuário, foto, bio e dados relacionados à conta. A área autenticada também mostra recursos como saldo de Zy Coins, seguidores e canais seguidos.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="transmitir">
+        <div class="eyebrow">Para streamers</div>
+        <h2 id="transmitir">Como transmitir pela Zytrix?</h2>
+        <p>A transmissão de vídeo é iniciada fora da Zytrix, na Twitch ou Kick. Dentro da Zytrix, o criador habilita seu perfil de streamer, informa a origem da transmissão e configura como a live será apresentada.</p>
+        <div class="grid grid-4">
+          <article class="card panel"><h3>1. Habilitar streamer</h3><p class="muted">O perfil permite criar a estrutura de canal necessária para disponibilizar uma live na plataforma.</p></article>
+          <article class="card panel"><h3>2. Vincular Twitch ou Kick</h3><p class="muted">A URL do canal é usada para identificar a plataforma e montar o player incorporado.</p></article>
+          <article class="card panel"><h3>3. Configurar a live</h3><p class="muted">Título, descrição, thumbnail e categoria podem ser ajustados na área Configurar Live.</p></article>
+          <article class="card panel"><h3>4. Controlar status</h3><p class="muted">Os botões Iniciar Live e Encerrar Live alteram manualmente o status da transmissão dentro da Zytrix.</p></article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="chat-comunidade">
+        <div class="eyebrow">Comunidade</div>
+        <h2 id="chat-comunidade">Chat, seguidores e notificações</h2>
+        <div class="grid grid-3">
+          <article class="card panel"><h3>Chat em tempo real</h3><p class="muted">As mensagens da live são sincronizadas pelo Cloud Firestore. O sistema possui recursos de moderação como exclusão de mensagens, mute, ban e mensagem fixada.</p></article>
+          <article class="card panel"><h3>Seguir streamer</h3><p class="muted">Usuários autenticados podem seguir ou deixar de seguir um streamer. A quantidade de seguidores pode ser exibida na interface.</p></article>
+          <article class="card panel"><h3>Avisos de live</h3><p class="muted">A página de notificações organiza canais seguidos e destaca aqueles que estão marcados como ao vivo na Zytrix.</p></article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="categorias">
+        <div class="eyebrow">Organização</div>
+        <h2 id="categorias">Quais categorias existem?</h2>
+        <p>A versão atual possui oito categorias principais: Gaming, Música, Just Chatting, Criatividade, Esportes, Tecnologia, Podcasts e IRL. Cada uma possui quatro subcategorias.</p>
+        <a href="categorias.html">Ver todas as categorias e subcategorias →</a>
+      </section>
+
+      <section class="section" aria-labelledby="zycoins">
+        <div class="eyebrow">Protótipo</div>
+        <h2 id="zycoins">Como funcionam os Zy Coins?</h2>
+        <p>Os Zy Coins são uma moeda interna do protótipo acadêmico. A aplicação mantém carteira, saldo e transações para demonstrar apoio a streamers. A versão atual não processa pagamentos reais de cartão; compras e pagamentos são simulados para fins de demonstração.</p>
+      </section>
+
+      <section class="section" aria-labelledby="publico">
+        <h2 id="publico">Para quem a Zytrix é indicada?</h2>
+        <p>A Zytrix é útil para espectadores que querem descobrir e acompanhar transmissões e para criadores que desejam testar uma experiência de canal organizada sobre uma transmissão existente da Twitch ou Kick. Como projeto acadêmico de TCC, também demonstra integração entre frontend web, Firebase, players externos, autenticação e dados em tempo real.</p>
+      </section>
+
+      <section class="section grid grid-2">
+        <div class="card panel"><h2>Perguntas frequentes</h2><p class="muted">Respostas diretas sobre cadastro, assistir, transmitir, categorias e configuração de live.</p><a href="faq.html">Abrir FAQ →</a></div>
+        <div class="card panel"><h2>Conheça o projeto</h2><p class="muted">Veja o objetivo e o escopo atual da Zytrix sem linguagem promocional ou recursos inventados.</p><a href="sobre.html">Sobre a Zytrix →</a></div>
+      </section>
+    </div>
+  </main>
+  <div data-footer></div>
+  <script type="module">import {header,footer} from './assets/js/ui.js'; header('recursos'); footer();</script>
+  <script type="module" src="assets/js/global-features.js"></script>
+</body>
+</html>
