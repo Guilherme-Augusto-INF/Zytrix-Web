@@ -22,11 +22,10 @@ jobs:
 
           OLD = "zytrix-web.vercel.app"
           NEW = "zytrix-lives.vercel.app"
-          SELF = Path('.github/workflows/migrate-canonical-domain.yml')
 
           changed = []
           for path in Path('.').rglob('*'):
-              if not path.is_file() or '.git' in path.parts or path == SELF:
+              if not path.is_file() or '.git' in path.parts or '.github/workflows' in path.as_posix():
                   continue
               try:
                   text = path.read_text(encoding='utf-8')
@@ -42,13 +41,13 @@ jobs:
               print(path)
 
           if not changed:
-              raise SystemExit('Nenhuma referência ao domínio antigo foi encontrada.')
+              raise SystemExit('Nenhuma referência ao domínio antigo foi encontrada fora dos workflows.')
 
-      - name: Validar migração
+      - name: Validar migração pública
         shell: bash
         run: |
-          if git grep -n 'zytrix-web.vercel.app' -- ':!.github/workflows/migrate-canonical-domain.yml'; then
-            echo 'Ainda existem referências ao domínio antigo.'
+          if git grep -n 'zytrix-web.vercel.app' -- ':!.github/workflows/**'; then
+            echo 'Ainda existem referências públicas ao domínio antigo.'
             exit 1
           fi
           grep -q 'https://zytrix-lives.vercel.app' index.html
@@ -62,6 +61,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add -A ':!.github/workflows/**'
           git commit -m "seo: define zytrix-lives como dominio canonico" || exit 0
           git push
