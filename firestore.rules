@@ -525,6 +525,51 @@ service cloud.firestore {
 
 
       // ================================================
+      // ESTADO DAS NOTIFICAÇÕES
+      // ================================================
+      //
+      // Documento privado da própria conta usado apenas
+      // para sincronizar lido/não lido entre dispositivos.
+      // Não cria notificações e não altera Zy Coins.
+      // ================================================
+
+      match /notificationState/{stateId} {
+
+        allow read:
+          if isOwner(uid)
+          || isAdmin();
+
+        allow create, update:
+          if isOwner(uid)
+
+          && stateId == "zycoins"
+
+          && request.resource.data.uid == uid
+
+          && request.resource.data.lastSupportSeenAt
+              == request.time
+
+          && request.resource.data.updatedAt
+              == request.time
+
+          && request.resource.data.keys().hasAll([
+            "uid",
+            "lastSupportSeenAt",
+            "updatedAt"
+          ])
+
+          && request.resource.data.keys().hasOnly([
+            "uid",
+            "lastSupportSeenAt",
+            "updatedAt"
+          ]);
+
+        allow delete:
+          if isOwner(uid)
+          || isAdmin();
+      }
+
+      // ================================================
       // HISTÓRICO
       // ================================================
 
