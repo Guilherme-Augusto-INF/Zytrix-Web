@@ -2,7 +2,7 @@ import {test,before,after,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
-import {doc,setDoc,getDoc,getDocs,collection,query,where,limit,writeBatch,serverTimestamp,Timestamp,updateDoc,deleteDoc,runTransaction} from 'firebase/firestore';
+import {doc,setDoc,getDoc,getDocs,collection,query,where,limit,writeBatch,serverTimestamp,Timestamp,updateDoc,deleteDoc,runTransaction,increment} from 'firebase/firestore';
 let env;
 const uid='alice';
 const as=(id,verified=true)=>env.authenticatedContext(id,{email_verified:verified}).firestore();
@@ -45,9 +45,9 @@ test('ALLOW alerta público somente quando acompanha apoio atômico válido',asy
   const txRef=doc(db,'zyCoinTransactions','support1');
   const alertRef=doc(db,'streams','live1','supportAlerts','support1');
   await assertSucceeds(runTransaction(db,async tx=>{
-    const sender=await tx.get(senderRef);const recipient=await tx.get(recipientRef);
+    const sender=await tx.get(senderRef);
     tx.update(senderRef,{balance:450,totalSent:50,totalReceived:0,lastTransactionId:'support1',updatedAt:serverTimestamp()});
-    tx.update(recipientRef,{balance:550,totalSent:0,totalReceived:50,lastTransactionId:'support1',updatedAt:serverTimestamp()});
+    tx.update(recipientRef,{balance:increment(50),totalReceived:increment(50),lastTransactionId:'support1',updatedAt:serverTimestamp()});
     tx.set(txRef,{transactionId:'support1',fromUid:'alice',toUid:'bob',streamId:'live1',amount:50,type:'stream_support',status:'completed',createdAt:serverTimestamp()});
     tx.set(alertRef,{transactionId:'support1',fromUid:'alice',streamId:'live1',amount:50,createdAt:serverTimestamp()});
   }));
@@ -64,4 +64,14 @@ test('ALLOW streamer configurar som e 18+; DENY som fora da lista',async()=>{
   await assertSucceeds(updateDoc(ref,{supportAlertSound:'bell',matureContent:true}));
   await assertFails(updateDoc(ref,{supportAlertSound:'remote-url'}));
   await assertFails(updateDoc(ref,{matureContent:'yes'}));
+});
+
+
+test('ALLOW apoio cria carteira ausente sem ler saldo do destinatário',async()=>{
+  const old=Timestamp.fromMillis(1);
+  await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();await setDoc(doc(db,'streams','live1'),{streamerUid:'bob',channelId:'bob',title:'Live',description:'',categoryId:'Games',thumbnailURL:'',status:'live',playbackURL:'https://www.twitch.tv/example',startedAt:old,endedAt:null,createdAt:old,viewerCount:0});await setDoc(doc(db,'wallets','alice'),{uid:'alice',balance:500,totalSent:0,totalReceived:0,lastTransactionId:'seed-a',createdAt:old,updatedAt:old});});
+  const db=as('alice'),senderRef=doc(db,'wallets','alice'),recipientRef=doc(db,'wallets','bob'),txRef=doc(db,'zyCoinTransactions','support-new-wallet'),alertRef=doc(db,'streams','live1','supportAlerts','support-new-wallet');
+  await assertFails(getDoc(recipientRef));
+  await assertSucceeds(runTransaction(db,async tx=>{await tx.get(senderRef);tx.update(senderRef,{balance:475,totalSent:25,totalReceived:0,lastTransactionId:'support-new-wallet',updatedAt:serverTimestamp()});tx.set(recipientRef,{uid:'bob',balance:525,totalSent:0,totalReceived:25,lastTransactionId:'support-new-wallet',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});tx.set(txRef,{transactionId:'support-new-wallet',fromUid:'alice',toUid:'bob',streamId:'live1',amount:25,type:'stream_support',status:'completed',createdAt:serverTimestamp()});tx.set(alertRef,{transactionId:'support-new-wallet',fromUid:'alice',streamId:'live1',amount:25,createdAt:serverTimestamp()});}));
+  await env.withSecurityRulesDisabled(async c=>{const snap=await getDoc(doc(c.firestore(),'wallets','bob'));assert.equal(snap.data().balance,525);assert.equal(snap.data().totalReceived,25);});
 });

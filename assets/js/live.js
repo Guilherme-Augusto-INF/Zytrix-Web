@@ -1,4 +1,4 @@
-import { auth, db, onAuthStateChanged, doc, getDoc, onSnapshot, collection, query, orderBy, limit, setDoc, deleteDoc, runTransaction, serverTimestamp, ensureWallet } from './firebase.js';
+import { auth, db, onAuthStateChanged, doc, getDoc, onSnapshot, collection, query, orderBy, limit, setDoc, deleteDoc, runTransaction, increment, serverTimestamp, ensureWallet } from './firebase.js';
 import { header, footer, escapeHtml, escapeAttr } from './ui.js';
 import { reportLink } from './report-link.js';
 import { getStreamingEmbed, streamingPlatformLabel } from './streaming.js';
@@ -647,9 +647,8 @@ async function support() {
         const recipientRef = doc(db, 'wallets', stream.streamerUid);
         const txRef = doc(collection(db, 'zyCoinTransactions'));
         const alertRef = doc(db, 'streams', stream.id, 'supportAlerts', txRef.id);
-        await runTransaction(db, async (tx) => {
+        const commitSupport = async (createRecipientWallet = false) => runTransaction(db, async (tx) => {
             const sender = await tx.get(senderRef);
-            const recipient = await tx.get(recipientRef);
             if (!sender.exists() || Number(sender.data().balance || 0) < amount) {
                 throw new Error('saldo');
             }
@@ -660,16 +659,7 @@ async function support() {
                 lastTransactionId: txRef.id,
                 updatedAt: serverTimestamp()
             });
-            if (recipient.exists()) {
-                const recipientData = recipient.data();
-                tx.update(recipientRef, {
-                    balance: Number(recipientData.balance || 0) + amount,
-                    totalReceived: Number(recipientData.totalReceived || 0) + amount,
-                    lastTransactionId: txRef.id,
-                    updatedAt: serverTimestamp()
-                });
-            }
-            else {
+            if (createRecipientWallet) {
                 tx.set(recipientRef, {
                     uid: stream.streamerUid,
                     balance: 500 + amount,
@@ -677,6 +667,14 @@ async function support() {
                     totalReceived: amount,
                     lastTransactionId: txRef.id,
                     createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+            }
+            else {
+                tx.update(recipientRef, {
+                    balance: increment(amount),
+                    totalReceived: increment(amount),
+                    lastTransactionId: txRef.id,
                     updatedAt: serverTimestamp()
                 });
             }
@@ -698,6 +696,17 @@ async function support() {
                 createdAt: serverTimestamp()
             });
         });
+        try {
+            await commitSupport(false);
+        }
+        catch (error) {
+            if (String(error?.code || '').includes('not-found')) {
+                await commitSupport(true);
+            }
+            else {
+                throw error;
+            }
+        }
         msg.innerHTML = `<div class="message ok">Apoio de ◈ ${amount.toLocaleString('pt-BR')} enviado!</div>`;
     }
     catch (error) {
