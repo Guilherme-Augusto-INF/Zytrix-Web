@@ -17,6 +17,7 @@ const checkoutState = new URLSearchParams(window.location.search).get('checkout'
 let user = null;
 let isAdmin = false;
 let processing = false;
+let feedbackHtml = '';
 
 function checkoutMessage() {
     if (checkoutState === 'success') {
@@ -64,13 +65,19 @@ function render() {
             </p>
             ${isAdmin ? '<div class="message ok">Modo de demonstração de administrador ativo. Esta opção não usa dinheiro real.</div>' : ''}
             <button id="pay" class="btn btn-primary" ${processing ? 'disabled' : ''}>${buttonLabel}</button>
-            <div id="pay-msg"></div>
+            <div id="pay-msg">${feedbackHtml}</div>
         </div>`;
 
     document.querySelector('#pay').onclick = pay;
 }
 
-async function startStripeCheckout(msg) {
+function setFeedback(html) {
+    feedbackHtml = html;
+    const msg = document.querySelector('#pay-msg');
+    if (msg) msg.innerHTML = feedbackHtml;
+}
+
+async function startStripeCheckout() {
     const idToken = await user.getIdToken();
     const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -92,11 +99,11 @@ async function startStripeCheckout(msg) {
         throw new Error(messages[data.error] || 'Não foi possível abrir o checkout do Stripe.');
     }
 
-    msg.innerHTML = '<div class="message ok">Redirecionando para o pagamento seguro do Stripe...</div>';
+    setFeedback('<div class="message ok">Redirecionando para o pagamento seguro do Stripe...</div>');
     window.location.assign(data.checkoutUrl);
 }
 
-async function runAdminDemo(msg) {
+async function runAdminDemo() {
     const orderRef = doc(collection(db, 'zyCoinOrders'));
 
     await runTransaction(db, async (tx) => {
@@ -122,39 +129,39 @@ async function runAdminDemo(msg) {
         });
     });
 
-    msg.innerHTML = '<div class="message ok">Pagamento demonstrativo aprovado e Zy Coins creditadas.</div>';
+    setFeedback('<div class="message ok">Pagamento demonstrativo aprovado e Zy Coins creditadas.</div>');
 }
 
 async function pay() {
-    const msg = document.querySelector('#pay-msg');
     if (!user) {
-        msg.innerHTML = '<div class="message err">Faça login para continuar.</div>';
+        setFeedback('<div class="message err">Faça login para continuar.</div>');
         return;
     }
     if (processing) return;
 
     processing = true;
+    feedbackHtml = '';
     render();
-    const activeMsg = document.querySelector('#pay-msg');
 
     try {
         if (isAdmin) {
-            await runAdminDemo(activeMsg);
+            await runAdminDemo();
         } else {
-            await startStripeCheckout(activeMsg);
+            await startStripeCheckout();
         }
     } catch (err) {
         console.error(err);
-        activeMsg.innerHTML = `<div class="message err">${err?.message || 'Não foi possível iniciar o pagamento.'}</div>`;
+        setFeedback(`<div class="message err">${err?.message || 'Não foi possível iniciar o pagamento.'}</div>`);
     } finally {
         processing = false;
-        if (isAdmin || !document.hidden) render();
+        render();
     }
 }
 
 onAuthStateChanged(auth, async (u) => {
     user = u;
     isAdmin = false;
+    feedbackHtml = '';
 
     if (u) {
         const a = await getDoc(doc(db, 'admins', u.uid)).catch(() => null);
