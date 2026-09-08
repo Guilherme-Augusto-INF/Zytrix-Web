@@ -1,0 +1,39 @@
+name: Fix support wallet privacy
+
+on:
+  push:
+    branches: [zycoin-support-notifications]
+    paths:
+      - "scripts/fix-support-wallet-privacy.py"
+      - ".github/workflows/fix-support-wallet-privacy.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: zycoin-support-notifications
+      - run: python3 scripts/fix-support-wallet-privacy.py
+      - name: Validate syntax and synchronized rules
+        shell: bash
+        run: |
+          set -e
+          node --check assets/js/firebase.js
+          node --check assets/js/live.js
+          node --check assets/js/config-live.js
+          cmp -s firestore.rules firebase/firestore.rules
+          cmp -s firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+      - name: Commit fix
+        shell: bash
+        run: |
+          set -e
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/js/firebase.js assets/js/live.js assets/js/config-live.js tests/firestore.rules.test.mjs
+          git commit -m "fix: keep recipient wallet private during support"
+          git push origin HEAD:zycoin-support-notifications
