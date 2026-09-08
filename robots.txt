@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zytrix-web.vercel.app/sitemap.xml
