@@ -10,7 +10,14 @@ const allowedOrigins = new Set([
   'https://zytrix-lives.vercel.app',
   'https://zytrix-web.vercel.app',
   'https://zytrix-web-guilhermeaugusto2525-1431.vercel.app',
+  'https://figma.com',
+  'https://www.figma.com',
 ]);
+
+for (const origin of (process.env.ALLOWED_CHECKOUT_ORIGINS || '').split(',')) {
+  const normalized = origin.trim().replace(/\/$/, '');
+  if (normalized) allowedOrigins.add(normalized);
+}
 
 function getStripe() {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -18,10 +25,30 @@ function getStripe() {
   return new Stripe(secretKey);
 }
 
+function isFigmaOrigin(origin) {
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'https:') return false;
+
+    const host = url.hostname.toLowerCase();
+    return (
+      host === 'figma.site' ||
+      host.endsWith('.figma.site') ||
+      host === 'figma.app' ||
+      host.endsWith('.figma.app') ||
+      host.endsWith('-figmaaipreview.site') ||
+      host.endsWith('.makeproxy-c.figma.site') ||
+      host.endsWith('.makeproxy-m.figma.site')
+    );
+  } catch {
+    return false;
+  }
+}
+
 function isAllowedOrigin(origin) {
   if (!origin) return true;
-  if (allowedOrigins.has(origin)) return true;
-  return /^https:\/\/[a-z0-9-]+\.figma\.site$/i.test(origin);
+  const normalized = origin.replace(/\/$/, '');
+  return allowedOrigins.has(normalized) || isFigmaOrigin(normalized);
 }
 
 function applyCors(req, res) {
