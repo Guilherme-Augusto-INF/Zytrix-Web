@@ -57,6 +57,10 @@ service cloud.firestore {
         && amount <= 100000;
     }
 
+    function validSupportAlertSound(sound) {
+      return sound in ["coin", "bell", "pop", "soft", "none"];
+    }
+
     function validWalletShape(data, uid) {
       return data.uid == uid
         && data.balance is int
@@ -886,6 +890,16 @@ service cloud.firestore {
         && request.resource.data.viewerCount
             == 0
 
+        && (
+          !request.resource.data.keys().hasAll(["supportAlertSound"])
+          || validSupportAlertSound(request.resource.data.supportAlertSound)
+        )
+
+        && (
+          !request.resource.data.keys().hasAll(["matureContent"])
+          || request.resource.data.matureContent is bool
+        )
+
         && request.resource.data.keys().hasAll([
           "streamerUid",
           "channelId",
@@ -913,7 +927,9 @@ service cloud.firestore {
           "startedAt",
           "endedAt",
           "createdAt",
-          "viewerCount"
+          "viewerCount",
+          "supportAlertSound",
+          "matureContent"
         ]);
 
 
@@ -944,6 +960,16 @@ service cloud.firestore {
           && request.resource.data.viewerCount
               == resource.data.viewerCount
 
+          && (
+            !request.resource.data.keys().hasAll(["supportAlertSound"])
+            || validSupportAlertSound(request.resource.data.supportAlertSound)
+          )
+
+          && (
+            !request.resource.data.keys().hasAll(["matureContent"])
+            || request.resource.data.matureContent is bool
+          )
+
           // STREAMER NÃO PODE ALTERAR VIEWERCOUNT
           && request.resource.data
               .diff(resource.data)
@@ -956,7 +982,9 @@ service cloud.firestore {
                 "status",
                 "playbackURL",
                 "startedAt",
-                "endedAt"
+                "endedAt",
+                "supportAlertSound",
+                "matureContent"
               ])
         )
 
@@ -985,6 +1013,67 @@ service cloud.firestore {
           && resource.data.streamerUid == request.auth.uid
         )
         || isAdmin();
+
+      // ================================================
+      // ALERTAS PÚBLICOS DE APOIO
+      // ================================================
+      // Evento sanitizado criado obrigatoriamente na mesma
+      // operação atômica do stream_support correspondente.
+      // Não expõe saldo, carteira ou pedidos de compra.
+      // ================================================
+
+      match /supportAlerts/{alertId} {
+        allow read:
+          if true;
+
+        allow create:
+          if loggedIn()
+          && request.resource.data.transactionId == alertId
+          && request.resource.data.fromUid == request.auth.uid
+          && request.resource.data.streamId == streamId
+          && validCoinAmount(request.resource.data.amount)
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.keys().hasOnly([
+            "transactionId",
+            "fromUid",
+            "streamId",
+            "amount",
+            "createdAt"
+          ])
+          && get(
+            /databases/$(database)/documents/streams/$(streamId)
+          ).data.status == "live"
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.transactionId == alertId
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.fromUid == request.auth.uid
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.toUid == get(
+            /databases/$(database)/documents/streams/$(streamId)
+          ).data.streamerUid
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.streamId == streamId
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.amount == request.resource.data.amount
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.type == "stream_support"
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.status == "completed"
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.createdAt == request.time;
+
+        allow update, delete:
+          if false;
+      }
+
 
       // ================================================
       // CHAT EM TEMPO REAL

@@ -1053,3 +1053,247 @@ select:focus-visible {
     gap: 4px;
   }
 }
+
+
+/* ==================================================
+   ZYTRIX SUPPORT ALERT LAYER
+   ================================================== */
+.player {
+  position: relative;
+}
+
+.support-alert-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 0;
+}
+
+.support-alert-audio-control {
+  align-self: flex-end;
+  padding: 6px 9px;
+  border: 1px solid #24445a;
+  border-radius: 8px;
+  background: #0d1722;
+  color: #9fb1c5;
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.support-alert-audio-control:hover {
+  border-color: #58c8ed;
+  color: #dff8ff;
+}
+
+.support-alert-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #2a6680;
+  border-left: 4px solid #58c8ed;
+  border-radius: 12px;
+  background: #0b1824;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.24);
+  animation: zySupportEnter 220ms ease-out both;
+}
+
+.support-alert-card.is-leaving {
+  animation: zySupportLeave 240ms ease-in both;
+}
+
+.support-alert-avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #58c8ed;
+  color: #06131c;
+  font-size: 16px;
+  font-weight: 900;
+  object-fit: cover;
+}
+
+.support-alert-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.support-alert-eyebrow {
+  color: #58c8ed;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.support-alert-copy strong {
+  color: #f2f7fb;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.support-alert-copy > span:last-child {
+  color: #8fa2b5;
+  font-size: 10px;
+}
+
+@keyframes zySupportEnter {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes zySupportLeave {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
+.twitch-embed-host {
+  width: 100%;
+  height: 100%;
+}
+
+.player-access-loading {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(6, 13, 20, 0.9);
+  color: #aebdca;
+  font-size: 9px;
+  pointer-events: none;
+}
+
+.player-access-fallback {
+  height: 100%;
+}
+
+.platform-access-help {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid #1b3041;
+  border-radius: 9px;
+  background: #0b141e;
+  color: #7f91a4;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.platform-access-help a {
+  flex: 0 0 auto;
+  color: #67d7f5;
+  font-weight: 800;
+}
+
+.mature-stream-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: 28px;
+  background: #080d13;
+  color: #edf2f7;
+  text-align: center;
+}
+
+.mature-stream-badge {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid #fb7185;
+  border-radius: 50%;
+  color: #fb7185;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.mature-stream-gate p {
+  max-width: 560px;
+  margin: 0;
+  color: #98a8b8;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.mature-stream-actions,
+.stream-alert-sound-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stream-alert-settings {
+  margin-top: 12px;
+  box-shadow: none;
+}
+
+.stream-alert-settings > p {
+  margin: 7px 0 10px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.stream-alert-sound-row .input {
+  flex: 1 1 170px;
+}
+
+.mature-setting {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: flex-start;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #1b2a38;
+  cursor: pointer;
+}
+
+.mature-setting input {
+  margin-top: 3px;
+}
+
+.mature-setting span {
+  display: grid;
+  gap: 3px;
+}
+
+.mature-setting small {
+  color: #8293a4;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+@media (max-width: 700px) {
+  .support-alert-card {
+    grid-template-columns: 38px minmax(0, 1fr);
+    padding: 10px 11px;
+  }
+  .support-alert-avatar {
+    width: 38px;
+    height: 38px;
+  }
+  .support-alert-copy strong {
+    font-size: 12px;
+  }
+  .platform-access-help {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .mature-stream-gate {
+    padding: 18px;
+  }
+}

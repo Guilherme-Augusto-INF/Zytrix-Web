@@ -646,6 +646,7 @@ async function support() {
         const senderRef = doc(db, 'wallets', user.uid);
         const recipientRef = doc(db, 'wallets', stream.streamerUid);
         const txRef = doc(collection(db, 'zyCoinTransactions'));
+        const alertRef = doc(db, 'streams', stream.id, 'supportAlerts', txRef.id);
         await runTransaction(db, async (tx) => {
             const sender = await tx.get(senderRef);
             const recipient = await tx.get(recipientRef);
@@ -687,6 +688,13 @@ async function support() {
                 amount,
                 type: 'stream_support',
                 status: 'completed',
+                createdAt: serverTimestamp()
+            });
+            tx.set(alertRef, {
+                transactionId: txRef.id,
+                fromUid: user.uid,
+                streamId: stream.id,
+                amount,
                 createdAt: serverTimestamp()
             });
         });
