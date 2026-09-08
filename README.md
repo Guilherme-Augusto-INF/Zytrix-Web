@@ -157,3 +157,15 @@ assets/
 ## Navegação
 
 Quando o usuário não está autenticado, a navbar mostra **Entrar** e **Registrar**. Quando está autenticado, mostra **Perfil**.
+
+
+## Recursos sociais e administração
+
+- seguir e deixar de seguir streamers diretamente na página da live;
+- contagem de seguidores no perfil, live e painel do streamer;
+- presença de espectadores autenticados ativos na Zytrix, com heartbeat;
+- página `notificacoes.html` com canais seguidos e lives ativas;
+- aviso na navegação quando um canal seguido está ao vivo;
+- página `admin.html`, visível apenas para documentos `admins/{uid}` ativos;
+- painel administrativo de leitura com usuários, streamers, lives, chat, banimentos, Zy Coins, pedidos e categorias;
+- os botões manuais **Iniciar live** e **Encerrar live** continuam sendo a fonte de controle do status Zytrix.

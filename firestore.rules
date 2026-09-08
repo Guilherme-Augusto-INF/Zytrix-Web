@@ -1451,6 +1451,54 @@ service cloud.firestore {
     // BLOQUEIO FINAL
     // ==================================================
 
+
+
+    // ==================================================
+    // PRESENÇA DE ESPECTADORES NA ZYTRIX
+    // ==================================================
+    // Presença leve para contabilizar usuários autenticados ativos
+    // em uma live. Documentos sem heartbeat recente deixam de ser
+    // considerados pelo frontend após 90 segundos.
+
+    match /streams/{streamId}/viewers/{viewerUid} {
+
+      allow read:
+        if loggedIn();
+
+      allow create:
+        if isOwner(viewerUid)
+        && request.resource.data.uid == viewerUid
+        && request.resource.data.joinedAt == request.time
+        && request.resource.data.lastSeen == request.time
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "joinedAt",
+          "lastSeen"
+        ]);
+
+      allow update:
+        if isOwner(viewerUid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.joinedAt == resource.data.joinedAt
+        && request.resource.data.lastSeen == request.time
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "lastSeen"
+            ]);
+
+      allow delete:
+        if isOwner(viewerUid)
+        || isAdmin()
+        || (
+          loggedIn()
+          && get(
+            /databases/$(database)/documents/streams/$(streamId)
+          ).data.streamerUid == request.auth.uid
+        );
+    }
+
     match /{document=**} {
 
       allow read, write:
