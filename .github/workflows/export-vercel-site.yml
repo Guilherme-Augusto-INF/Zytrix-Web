@@ -2,7 +2,7 @@ name: Export Vercel Site
 
 on:
   push:
-    branches: [main, zycoin-support-notifications]
+    branches: [main]
     paths:
       - "*.html"
       - "robots.txt"
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   export:
@@ -22,97 +22,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Sincronizar regras de notificações
-        if: github.ref == 'refs/heads/zycoin-support-notifications'
-        shell: bash
-        run: |
-          set -e
-          python3 <<'PY'
-          from pathlib import Path
-
-          files = [
-              Path("firestore.rules"),
-              Path("firebase/firestore.rules"),
-              Path("REGRAS-PARA-COLAR-NO-FIREBASE.txt"),
-          ]
-
-          anchor = "\n".join([
-              "      // ================================================",
-              "      // HISTÓRICO",
-              "      // ================================================",
-              "",
-          ])
-
-          block = "\n".join([
-              "      // ================================================",
-              "      // ESTADO DAS NOTIFICAÇÕES",
-              "      // ================================================",
-              "      //",
-              "      // Documento privado da própria conta usado apenas",
-              "      // para sincronizar lido/não lido entre dispositivos.",
-              "      // Não cria notificações e não altera Zy Coins.",
-              "      // ================================================",
-              "",
-              "      match /notificationState/{stateId} {",
-              "",
-              "        allow read:",
-              "          if isOwner(uid)",
-              "          || isAdmin();",
-              "",
-              "        allow create, update:",
-              "          if isOwner(uid)",
-              "",
-              "          && stateId == \"zycoins\"",
-              "",
-              "          && request.resource.data.uid == uid",
-              "",
-              "          && request.resource.data.lastSupportSeenAt",
-              "              == request.time",
-              "",
-              "          && request.resource.data.updatedAt",
-              "              == request.time",
-              "",
-              "          && request.resource.data.keys().hasAll([",
-              "            \"uid\",",
-              "            \"lastSupportSeenAt\",",
-              "            \"updatedAt\"",
-              "          ])",
-              "",
-              "          && request.resource.data.keys().hasOnly([",
-              "            \"uid\",",
-              "            \"lastSupportSeenAt\",",
-              "            \"updatedAt\"",
-              "          ]);",
-              "",
-              "        allow delete:",
-              "          if isOwner(uid)",
-              "          || isAdmin();",
-              "      }",
-              "",
-              "",
-          ])
-
-          changed = []
-          for path in files:
-              text = path.read_text(encoding="utf-8")
-              if "match /notificationState/{stateId}" in text:
-                  continue
-              if anchor not in text:
-                  raise SystemExit(f"Anchor not found in {path}")
-              path.write_text(text.replace(anchor, block + anchor, 1), encoding="utf-8")
-              changed.append(str(path))
-
-          print("Patched:", ", ".join(changed) if changed else "already patched")
-          PY
-
-          if ! git diff --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add firestore.rules firebase/firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
-            git commit -m "feat: secure synced notification read state"
-            git push origin HEAD:zycoin-support-notifications
-          fi
 
       - name: Preparar arquivos de deploy
         shell: bash
