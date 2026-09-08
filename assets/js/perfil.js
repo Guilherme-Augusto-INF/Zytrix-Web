@@ -1,4 +1,4 @@
-import { auth, db, onAuthStateChanged, doc, getDoc, onSnapshot, updateDoc, query, collection, where, limit, getDocs, serverTimestamp, writeBatch } from './firebase.js';
+import { auth, db, googleProvider, onAuthStateChanged, EmailAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, deleteUser, doc, getDoc, getDocs, deleteDoc, onSnapshot, updateDoc, query, collection, collectionGroup, where, limit, serverTimestamp, writeBatch } from './firebase.js';
 import { header, footer, escapeHtml, escapeAttr } from './ui.js';
 import { parseStreamingSource, streamingPlatformLabel } from './streaming.js';
 header();
@@ -224,6 +224,16 @@ function render() {
         `}
     </div>
 
+    <div class="card panel" style="margin-top:16px;border-color:#7f1d1d">
+      <div class="eyebrow">Configurações da conta</div>
+      <h2>Excluir conta</h2>
+      <p class="muted">
+        Exclui sua conta de autenticação e os dados principais do perfil na Zytrix. Registros necessários para segurança, moderação e histórico de transações podem ser preservados quando aplicável.
+      </p>
+      <button id="delete-account" class="btn btn-danger">Excluir minha conta</button>
+      <div id="delete-account-msg"></div>
+    </div>
+
     <div style="margin-top:16px">
       <a class="btn btn-danger" href="sair.html">Sair da conta</a>
     </div>
@@ -232,6 +242,7 @@ function render() {
         document.querySelector('#edit-area').classList.toggle('hidden');
     };
     document.querySelector('#save-profile').onclick = saveProfile;
+    document.querySelector('#delete-account').onclick = deleteAccount;
     if (!channel) {
         document.querySelector('#be-streamer').onclick = createStreamer;
     }
@@ -318,6 +329,92 @@ async function createStreamer() {
     catch (error) {
         console.error(error);
         message.innerHTML = '<div class="message err">Não foi possível criar o canal.</div>';
+    }
+}
+async function reauthenticateForDeletion() {
+    const providers = user.providerData.map(item => item.providerId);
+    if (providers.includes('google.com')) {
+        await reauthenticateWithPopup(user, googleProvider);
+        return;
+    }
+    if (providers.includes('password')) {
+        const password = window.prompt('Para confirmar a exclusão, digite sua senha atual:');
+        if (!password) throw new Error('Senha não informada.');
+        const credential = EmailAuthProvider.credential(user.email, password);
+        await reauthenticateWithCredential(user, credential);
+        return;
+    }
+    throw new Error('Não foi possível reautenticar este método de login.');
+}
+async function deleteRefsInBatches(refs) {
+    const unique = [...new Map(refs.map(ref => [ref.path, ref])).values()];
+    for (let offset = 0; offset < unique.length; offset += 400) {
+        const batch = writeBatch(db);
+        unique.slice(offset, offset + 400).forEach(ref => batch.delete(ref));
+        await batch.commit();
+    }
+}
+async function collectAccountRefs(uid) {
+    const refs = [];
+    const ownLists = await Promise.all([
+        getDocs(collection(db, 'users', uid, 'following')),
+        getDocs(collection(db, 'users', uid, 'watchHistory')),
+        getDocs(collection(db, 'channels', uid, 'followers')).catch(() => null),
+        getDocs(query(collection(db, 'streams'), where('streamerUid', '==', uid)))
+    ]);
+    ownLists.forEach(snap => snap?.docs?.forEach(item => refs.push(item.ref)));
+    try {
+        const followerRefs = await getDocs(query(collectionGroup(db, 'followers'), where('uid', '==', uid)));
+        followerRefs.docs.forEach(item => refs.push(item.ref));
+    }
+    catch (error) {
+        console.warn('Não foi possível limpar todas as referências de seguidores.', error);
+    }
+    try {
+        const ownMessages = await getDocs(query(collectionGroup(db, 'chat'), where('uid', '==', uid)));
+        ownMessages.docs.forEach(item => refs.push(item.ref));
+    }
+    catch (error) {
+        console.warn('Não foi possível limpar todas as mensagens do usuário.', error);
+    }
+    refs.push(
+        doc(db, 'channels', uid),
+        doc(db, 'wallets', uid),
+        doc(db, 'profiles', uid),
+        doc(db, 'users', uid)
+    );
+    return refs;
+}
+async function deleteAccount() {
+    const message = document.querySelector('#delete-account-msg');
+    const button = document.querySelector('#delete-account');
+    const confirmation = window.prompt('Esta ação é permanente. Digite EXCLUIR para confirmar:');
+    if (confirmation !== 'EXCLUIR') {
+        message.innerHTML = '<div class="message err">Exclusão cancelada.</div>';
+        return;
+    }
+    button.disabled = true;
+    message.innerHTML = '<div class="message">Confirmando sua identidade...</div>';
+    try {
+        await reauthenticateForDeletion();
+        message.innerHTML = '<div class="message">Removendo dados da conta...</div>';
+        walletUnsubscribe?.();
+        walletUnsubscribe = null;
+        const refs = await collectAccountRefs(user.uid);
+        await deleteRefsInBatches(refs);
+        await deleteUser(user);
+        localStorage.removeItem('zytrixSelectedStream');
+        localStorage.removeItem('zytrixSelectedStreamName');
+        localStorage.removeItem('zytrixSelectedStreamTitle');
+        location.href = 'index.html';
+    }
+    catch (error) {
+        console.error('Falha ao excluir conta:', error);
+        const text = error?.code === 'auth/requires-recent-login'
+            ? 'Entre novamente na conta e repita a exclusão.'
+            : 'Não foi possível concluir a exclusão. Nenhuma nova tentativa será feita automaticamente.';
+        message.innerHTML = `<div class="message err">${text}</div>`;
+        button.disabled = false;
     }
 }
 onAuthStateChanged(auth, async (currentUser) => {
