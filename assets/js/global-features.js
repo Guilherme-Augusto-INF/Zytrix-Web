@@ -5,14 +5,21 @@ import {
   collection,
   doc,
   getDoc,
-  onSnapshot
+  onSnapshot,
+  query,
+  where
 } from './firebase.js';
-import { escapeAttr, escapeHtml } from './ui.js';
+import { escapeHtml } from './ui.js';
 
 let stopFollowing = null;
 let stopChannels = null;
+let stopSupportTransactions = null;
 let followingIds = new Set();
 let channels = [];
+let supportTransactions = [];
+let seenSupportIds = new Set();
+let supportSnapshotReady = false;
+let activeUid = '';
 
 function waitForNav(timeout = 5000) {
   return new Promise(resolve => {
@@ -38,10 +45,25 @@ function waitForNav(timeout = 5000) {
   });
 }
 
+function seenStorageKey(uid) {
+  return `zytrix-support-seen:${uid}`;
+}
+
+function loadSeenSupportIds(uid) {
+  if (!uid) return new Set();
+  try {
+    const raw = JSON.parse(localStorage.getItem(seenStorageKey(uid)) || '[]');
+    return new Set(Array.isArray(raw) ? raw.filter(value => typeof value === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
 function removeSignedInFeatures() {
   document.querySelector('#notifications-nav')?.remove();
   document.querySelector('#admin-nav')?.remove();
   document.querySelector('#zytrix-live-toast')?.remove();
+  document.querySelector('#zytrix-support-toast')?.remove();
 }
 
 function ensureNotificationButton(nav) {
@@ -52,8 +74,8 @@ function ensureNotificationButton(nav) {
   link.id = 'notifications-nav';
   link.className = 'icon-link notification-link';
   link.href = 'notificacoes.html';
-  link.title = 'Lives de canais seguidos';
-  link.setAttribute('aria-label', 'Abrir notificações de lives');
+  link.title = 'Notificações';
+  link.setAttribute('aria-label', 'Abrir notificações');
   link.innerHTML = '<span aria-hidden="true">🔔</span><span id="notifications-count" class="notification-count hidden">0</span>';
 
   const profile = nav.querySelector('#profile-nav');
@@ -81,15 +103,40 @@ function showLiveToast(channel) {
   setTimeout(() => toast.remove(), 6500);
 }
 
+function showSupportToast(transaction) {
+  if (!transaction?.id) return;
+  const key = `zytrix-support-toast:${transaction.id}`;
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, '1');
+
+  const amount = Number(transaction.amount || 0);
+  document.querySelector('#zytrix-support-toast')?.remove();
+  const toast = document.createElement('a');
+  toast.id = 'zytrix-support-toast';
+  toast.className = 'live-toast';
+  toast.href = 'notificacoes.html';
+  toast.innerHTML = `
+    <strong>◈ Você recebeu ${amount.toLocaleString('pt-BR')} Zy Coins!</strong>
+    <span>Um espectador apoiou sua transmissão. Toque para ver.</span>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 7000);
+}
+
 function refreshNotifications() {
   const followedLive = channels.filter(channel =>
     followingIds.has(channel.id) && channel.isLive === true
   );
 
+  const unreadSupports = supportTransactions.filter(transaction =>
+    transaction.id && !seenSupportIds.has(transaction.id)
+  );
+
+  const total = followedLive.length + unreadSupports.length;
   const count = document.querySelector('#notifications-count');
   if (count) {
-    count.textContent = String(followedLive.length);
-    count.classList.toggle('hidden', followedLive.length === 0);
+    count.textContent = total > 99 ? '99+' : String(total);
+    count.classList.toggle('hidden', total === 0);
   }
 
   if (followedLive.length) {
@@ -118,11 +165,24 @@ async function addAdminLink(nav, uid) {
 function cleanupSubscriptions() {
   stopFollowing?.();
   stopChannels?.();
+  stopSupportTransactions?.();
   stopFollowing = null;
   stopChannels = null;
+  stopSupportTransactions = null;
   followingIds = new Set();
   channels = [];
+  supportTransactions = [];
+  seenSupportIds = new Set();
+  supportSnapshotReady = false;
+  activeUid = '';
 }
+
+window.addEventListener('zytrix-support-seen-updated', event => {
+  const uid = event?.detail?.uid || activeUid;
+  if (!uid || uid !== activeUid) return;
+  seenSupportIds = loadSeenSupportIds(uid);
+  refreshNotifications();
+});
 
 onAuthStateChanged(auth, async user => {
   cleanupSubscriptions();
@@ -134,6 +194,8 @@ onAuthStateChanged(auth, async user => {
     return;
   }
 
+  activeUid = user.uid;
+  seenSupportIds = loadSeenSupportIds(user.uid);
   ensureNotificationButton(nav);
   addAdminLink(nav, user.uid);
 
@@ -153,5 +215,32 @@ onAuthStateChanged(auth, async user => {
       refreshNotifications();
     },
     error => console.warn('Não foi possível acompanhar o status dos canais.', error)
+  );
+
+  const supportsQuery = query(
+    collection(db, 'zyCoinTransactions'),
+    where('toUid', '==', user.uid)
+  );
+
+  stopSupportTransactions = onSnapshot(
+    supportsQuery,
+    snap => {
+      const wasReady = supportSnapshotReady;
+      supportTransactions = snap.docs
+        .map(item => ({ id: item.id, ...item.data() }))
+        .filter(item => item.type === 'stream_support' && item.status === 'completed');
+
+      if (wasReady) {
+        snap.docChanges()
+          .filter(change => change.type === 'added')
+          .map(change => ({ id: change.doc.id, ...change.doc.data() }))
+          .filter(item => item.type === 'stream_support' && item.status === 'completed')
+          .forEach(showSupportToast);
+      }
+
+      supportSnapshotReady = true;
+      refreshNotifications();
+    },
+    error => console.warn('Não foi possível acompanhar apoios em Zy Coins.', error)
   );
 });
