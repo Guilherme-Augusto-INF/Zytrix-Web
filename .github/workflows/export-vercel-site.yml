@@ -2,7 +2,7 @@ name: Export Vercel Site
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/platform-governance]
     paths:
       - "*.html"
       - "robots.txt"
