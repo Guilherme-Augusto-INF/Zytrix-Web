@@ -1,0 +1,56 @@
+{
+  "date": "2026-09-08",
+  "deployment": "dpl_7PVk6345DesoWswE3iiHSoTzZyHw",
+  "project": "prj_RIZKlfqoO8LEgRqg258hC0jgtkS2",
+  "sourceCommit": "e6e868e3391a26be66bb3748dcf1cdbf7419529b",
+  "results": [
+    {
+      "path": "/termos",
+      "status": 200,
+      "success": true,
+      "title": "Termos de Uso | Zytrix"
+    },
+    {
+      "path": "/privacidade",
+      "status": 200,
+      "success": true,
+      "title": "Política de Privacidade | Zytrix"
+    },
+    {
+      "path": "/diretrizes-da-comunidade",
+      "status": 200,
+      "success": true,
+      "title": "Diretrizes da Comunidade | Zytrix"
+    },
+    {
+      "path": "/denuncias-e-moderacao",
+      "status": 200,
+      "success": true,
+      "title": "Política de Denúncias e Moderação | Zytrix"
+    },
+    {
+      "path": "/conteudo-proibido",
+      "status": 200,
+      "success": true,
+      "title": "Regras sobre Conteúdo Proibido | Zytrix"
+    },
+    {
+      "path": "/politicas",
+      "status": 200,
+      "success": true,
+      "title": "Segurança e políticas | Zytrix"
+    }
+  ],
+  "browser": {
+    "policyNavigation": true,
+    "signupPolicyLinks": true,
+    "anonymousSubmissionDisabled": true,
+    "anonymousModerationDenied": true,
+    "notFound": true
+  },
+  "activation": {
+    "reports": false,
+    "terms": false
+  },
+  "readiness": "FAIL"
+}

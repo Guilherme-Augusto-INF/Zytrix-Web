@@ -49,24 +49,49 @@ export function header(active = '') {
     });
 }
 
+function ensureFooterStyles() {
+    if (document.querySelector('link[data-zytrix-footer-style]')) return;
+
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.href = 'assets/css/footer.css';
+    stylesheet.dataset.zytrixFooterStyle = 'true';
+    document.head.append(stylesheet);
+}
+
 export function footer() {
     const element = document.querySelector('[data-footer]');
     if (!element) return;
 
+    ensureFooterStyles();
+
     element.innerHTML = `
-    <footer class="site-footer">
-      <div class="container footer-inner">
-        <a class="brand" href="index.html">
-          <span class="brand-mark">Z</span>
-          <span>Zytrix</span>
-        </a>
+    <footer class="site-footer site-footer-v2">
+      <div class="container footer-shell">
+        <div class="footer-top">
+          <a class="brand footer-brand" href="index.html" aria-label="Zytrix - Início">
+            <span class="brand-mark">Z</span>
+            <span>Zytrix</span>
+          </a>
 
-        <span>© 2026 Zytrix. Todos os direitos reservados.</span>
+          <nav class="footer-links" aria-label="Links institucionais">
+            <a href="recursos.html">Recursos</a>
+            <a href="faq.html">FAQ</a>
+            <a href="sobre.html">Sobre</a>
+          </nav>
+        </div>
 
-        <div class="footer-links">
-          <a href="recursos.html">Recursos</a>
-          <a href="faq.html">FAQ</a>
-          <a href="sobre.html">Sobre</a>
+        <div class="footer-bottom">
+          <span class="footer-copy">© 2026 Zytrix. Todos os direitos reservados.</span>
+
+          <nav class="governance-links" aria-label="Políticas e segurança">
+            <a href="/termos">Termos</a>
+            <a href="/privacidade">Privacidade</a>
+            <a href="/diretrizes-da-comunidade">Diretrizes da Comunidade</a>
+            <a href="/denuncias-e-moderacao">Denúncias e Moderação</a>
+            <a href="/conteudo-proibido">Conteúdo Proibido</a>
+            <a href="/politicas">Central de políticas</a>
+          </nav>
         </div>
       </div>
     </footer>

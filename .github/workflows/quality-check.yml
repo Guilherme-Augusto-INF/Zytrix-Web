@@ -51,7 +51,7 @@ jobs:
                   if ref.startswith(('http://', 'https://', '//')):
                       continue
                   clean = ref.split('?', 1)[0].split('#', 1)[0]
-                  if clean and not Path(clean).exists():
+                  if clean and not Path(clean.lstrip('/')).exists():
                       errors.append(f'{html}: referencia ausente: {ref}')
           if errors:
               raise SystemExit('\n'.join(errors))
