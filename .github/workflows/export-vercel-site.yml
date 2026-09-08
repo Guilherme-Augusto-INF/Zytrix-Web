@@ -1,4 +1,5 @@
 name: Export Vercel Site
+# Temporary registered runner for the wallet-privacy patch; restored after validation.
 
 on:
   push:
