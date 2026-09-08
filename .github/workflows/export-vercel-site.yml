@@ -1,15 +1,20 @@
 name: Export Vercel Site
-# Temporary registered runner for the wallet-privacy patch; restored after validation.
 
 on:
   push:
-    branches: [zycoin-support-notifications]
+    branches: [main]
     paths:
+      - "*.html"
+      - "robots.txt"
+      - "sitemap.xml"
+      - "vercel.json"
+      - "assets/css/**"
+      - "assets/js/**"
       - ".github/workflows/export-vercel-site.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   export:
@@ -17,35 +22,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Preparar arquivos de deploy
+        shell: bash
+        run: |
+          set -e
+          mkdir -p export/assets/css export/assets/js
+          cp index.html ao-vivo.html categorias.html categoria.html live.html recursos.html faq.html sobre.html login.html registro.html recuperar-senha.html perfil.html config-live.html loja.html pagamento.html sair.html notificacoes.html admin.html export/
+          cp termos.html privacidade.html diretrizes-da-comunidade.html denuncias-e-moderacao.html conteudo-proibido.html politicas.html denunciar.html moderacao.html export/
+          cp google87f94d9d56cacf74.html robots.txt sitemap.xml vercel.json export/
+          cp assets/css/*.css export/assets/css/
+          cp assets/js/*.js export/assets/js/
+
+      - name: Upload do pacote
+        uses: actions/upload-artifact@v4
         with:
-          ref: zycoin-support-notifications
-
-      - name: Corrigir privacidade da carteira destinatária
-        run: python3 scripts/fix-support-wallet-privacy.py
-
-      - name: Validar patch
-        shell: bash
-        run: |
-          set -e
-          node --check assets/js/firebase.js
-          node --check assets/js/live.js
-          node --check assets/js/config-live.js
-          grep -q "const commitSupport" assets/js/live.js
-          grep -q "increment(amount)" assets/js/live.js
-          grep -q "ensureWallet(user.uid)" assets/js/config-live.js
-          cmp -s firestore.rules firebase/firestore.rules
-          cmp -s firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
-
-      - name: Commit da correção
-        shell: bash
-        run: |
-          set -e
-          if git diff --quiet; then
-            echo "Nenhuma alteração necessária"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/js/firebase.js assets/js/live.js assets/js/config-live.js tests/firestore.rules.test.mjs
-          git commit -m "fix: keep recipient wallet private during support"
-          git push origin HEAD:zycoin-support-notifications
+          name: zytrix-vercel-site
+          path: export
+          if-no-files-found: error
+          retention-days: 1
