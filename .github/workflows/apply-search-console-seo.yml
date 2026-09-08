@@ -1,0 +1,146 @@
+name: Apply Search Console and SEO
+
+on:
+  push:
+    paths:
+      - ".github/workflows/apply-search-console-seo.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply-seo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Aplicar SEO técnico
+        shell: python
+        run: |
+          from pathlib import Path
+          import html
+          import json
+          import re
+
+          BASE = "https://zytrix-web.vercel.app"
+
+          pages = {
+              "index.html": ("Zytrix — Início", "Assista às melhores lives, descubra novos criadores e faça parte da comunidade Zytrix.", "/"),
+              "ao-vivo.html": ("Zytrix — Ao Vivo", "Descubra transmissões ao vivo na Zytrix e acompanhe seus criadores favoritos.", "/ao-vivo.html"),
+              "categorias.html": ("Zytrix — Categorias", "Explore categorias de livestream na Zytrix, incluindo games, música, tecnologia, esportes e muito mais.", "/categorias.html"),
+              "categoria.html": ("Zytrix — Categoria", "Explore transmissões ao vivo por categoria e subcategoria na Zytrix.", "/categoria.html"),
+              "live.html": ("Zytrix — Live", "Assista transmissões ao vivo na Zytrix, participe do chat em tempo real e apoie streamers com Zy Coins.", "/live.html"),
+              "sobre.html": ("Zytrix — Sobre", "Conheça a Zytrix, uma plataforma de livestream criada para conectar criadores e espectadores.", "/sobre.html"),
+              "login.html": ("Zytrix — Entrar", "Entre na sua conta Zytrix para acompanhar lives, participar do chat e acessar seu perfil.", "/login.html"),
+              "registro.html": ("Zytrix — Registrar", "Crie sua conta Zytrix para acompanhar criadores, participar de lives e fazer parte da comunidade.", "/registro.html"),
+              "recuperar-senha.html": ("Zytrix — Recuperar senha", "Recupere o acesso à sua conta Zytrix com segurança.", "/recuperar-senha.html"),
+              "perfil.html": ("Zytrix — Perfil", "Acesse e gerencie seu perfil, saldo de Zy Coins e recursos de streamer na Zytrix.", "/perfil.html"),
+              "config-live.html": ("Zytrix — Configurar live", "Configure título, categoria, thumbnail, plataforma e status da sua transmissão na Zytrix.", "/config-live.html"),
+              "loja.html": ("Zytrix — Zy Coins", "Conheça os pacotes demonstrativos de Zy Coins para apoiar criadores na Zytrix.", "/loja.html"),
+              "pagamento.html": ("Zytrix — Pagamento", "Tela demonstrativa de pedido de Zy Coins da plataforma Zytrix.", "/pagamento.html"),
+              "sair.html": ("Zytrix — Sair", "Encerre sua sessão da Zytrix com segurança.", "/sair.html"),
+              "notificacoes.html": ("Zytrix — Notificações", "Veja quais streamers que você segue estão ao vivo na Zytrix.", "/notificacoes.html"),
+              "admin.html": ("Zytrix — Administração", "Área administrativa protegida da plataforma Zytrix.", "/admin.html"),
+          }
+
+          def clean_existing_seo(head):
+              patterns = [
+                  r'\s*<meta\b[^>]*\bname=["\'](?:description|robots|googlebot|twitter:card|twitter:title|twitter:description)["\'][^>]*?/?>\s*',
+                  r'\s*<link\b[^>]*\brel=["\']canonical["\'][^>]*?/?>\s*',
+                  r'\s*<meta\b[^>]*\bproperty=["\']og:[^"\']+["\'][^>]*?/?>\s*',
+              ]
+              for pattern in patterns:
+                  head = re.sub(pattern, '\n', head, flags=re.I)
+              return head
+
+          for filename, (fallback_title, description, canonical_path) in pages.items():
+              path = Path(filename)
+              if not path.exists():
+                  raise RuntimeError(f"Página esperada não encontrada: {filename}")
+
+              text = path.read_text(encoding="utf-8")
+              match = re.search(r'(?is)<head>(.*?)</head>', text)
+              if not match:
+                  raise RuntimeError(f"Head não encontrado em {filename}")
+
+              head = clean_existing_seo(match.group(1))
+              title_match = re.search(r'(?is)<title[^>]*>(.*?)</title>', head)
+              title = fallback_title
+              if title_match:
+                  parsed = re.sub(r'\s+', ' ', title_match.group(1)).strip()
+                  if parsed:
+                      title = parsed
+
+              canonical = BASE + canonical_path
+              block = f'''\n  <meta name="description" content="{html.escape(description, quote=True)}">\n  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">\n  <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">\n  <link rel="canonical" href="{canonical}">\n  <meta property="og:locale" content="pt_BR">\n  <meta property="og:type" content="website">\n  <meta property="og:site_name" content="Zytrix">\n  <meta property="og:title" content="{html.escape(title, quote=True)}">\n  <meta property="og:description" content="{html.escape(description, quote=True)}">\n  <meta property="og:url" content="{canonical}">\n  <meta name="twitter:card" content="summary">\n  <meta name="twitter:title" content="{html.escape(title, quote=True)}">\n  <meta name="twitter:description" content="{html.escape(description, quote=True)}">\n'''
+
+              new_head = head.rstrip() + block
+              text = text[:match.start(1)] + new_head + text[match.end(1):]
+
+              if filename in {"live.html", "categoria.html"} and "assets/js/seo-runtime.js" not in text:
+                  text = text.replace(
+                      "</body>",
+                      '  <script type="module" src="assets/js/seo-runtime.js"></script>\n</body>',
+                      1,
+                  )
+
+              path.write_text(text, encoding="utf-8")
+
+          runtime = '''const PRODUCTION_ORIGIN = 'https://zytrix-web.vercel.app';\n\nconst allowedParams = new Set(['stream', 'categoria', 'subcategoria']);\nconst cleanPath = location.pathname.replace(/\\.html$/i, '');\nconst canonical = new URL(cleanPath || '/', PRODUCTION_ORIGIN);\n\nfor (const [key, value] of new URLSearchParams(location.search)) {\n  if (allowedParams.has(key) && value) {\n    canonical.searchParams.append(key, value);\n  }\n}\n\nconst canonicalLink = document.querySelector('link[rel="canonical"]');\nif (canonicalLink) canonicalLink.href = canonical.href;\n\nconst ogUrl = document.querySelector('meta[property="og:url"]');\nif (ogUrl) ogUrl.content = canonical.href;\n'''
+          Path('assets/js/seo-runtime.js').write_text(runtime, encoding='utf-8')
+
+          sitemap = '''<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://zytrix-web.vercel.app/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n  <url><loc>https://zytrix-web.vercel.app/ao-vivo.html</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>\n  <url><loc>https://zytrix-web.vercel.app/categorias.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n  <url><loc>https://zytrix-web.vercel.app/sobre.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n  <url><loc>https://zytrix-web.vercel.app/loja.html</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n  <url><loc>https://zytrix-web.vercel.app/notificacoes.html</loc><changefreq>daily</changefreq><priority>0.5</priority></url>\n</urlset>\n'''
+          Path('sitemap.xml').write_text(sitemap, encoding='utf-8')
+
+          vercel_path = Path('vercel.json')
+          config = json.loads(vercel_path.read_text(encoding='utf-8'))
+          config['cleanUrls'] = False
+          config['trailingSlash'] = False
+          config['rewrites'] = [
+              {'source': '/ao-vivo', 'destination': '/ao-vivo.html'},
+              {'source': '/categorias', 'destination': '/categorias.html'},
+              {'source': '/categoria', 'destination': '/categoria.html'},
+              {'source': '/live', 'destination': '/live.html'},
+              {'source': '/sobre', 'destination': '/sobre.html'},
+              {'source': '/login', 'destination': '/login.html'},
+              {'source': '/registro', 'destination': '/registro.html'},
+              {'source': '/recuperar-senha', 'destination': '/recuperar-senha.html'},
+              {'source': '/perfil', 'destination': '/perfil.html'},
+              {'source': '/config-live', 'destination': '/config-live.html'},
+              {'source': '/loja', 'destination': '/loja.html'},
+              {'source': '/pagamento', 'destination': '/pagamento.html'},
+              {'source': '/sair', 'destination': '/sair.html'},
+              {'source': '/notificacoes', 'destination': '/notificacoes.html'},
+              {'source': '/admin', 'destination': '/admin.html'},
+          ]
+          vercel_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+      - name: Verificar arquivo do Google e SEO
+        shell: bash
+        run: |
+          test "$(cat google87f94d9d56cacf74.html)" = "google-site-verification: google87f94d9d56cacf74.html"
+          grep -q "User-agent: \*" robots.txt
+          grep -q "Allow: /" robots.txt
+          grep -q "https://zytrix-web.vercel.app/sitemap.xml" robots.txt
+          grep -q "<urlset" sitemap.xml
+          test -f assets/js/seo-runtime.js
+          for file in index.html ao-vivo.html categorias.html categoria.html live.html sobre.html login.html registro.html recuperar-senha.html perfil.html config-live.html loja.html pagamento.html sair.html notificacoes.html admin.html; do
+            grep -q 'name="robots" content="index,follow' "$file"
+            grep -q 'name="googlebot" content="index,follow' "$file"
+            grep -q 'rel="canonical"' "$file"
+            grep -q 'property="og:title"' "$file"
+            grep -q 'property="og:description"' "$file"
+            grep -q 'property="og:url"' "$file"
+            ! grep -qi 'noindex' "$file"
+          done
+          node --check assets/js/seo-runtime.js
+
+      - name: Commitar alterações
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html ao-vivo.html categorias.html categoria.html live.html sobre.html login.html registro.html recuperar-senha.html perfil.html config-live.html loja.html pagamento.html sair.html notificacoes.html admin.html assets/js/seo-runtime.js sitemap.xml vercel.json
+          git commit -m "seo: adiciona metadata canonical Open Graph e indexacao" || exit 0
+          git push
