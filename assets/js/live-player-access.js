@@ -80,13 +80,13 @@ function renderMatureGate(player, source) {
   const title = document.createElement('strong');
   title.textContent = 'Conteúdo marcado como 18+';
   const text = document.createElement('p');
-  text.textContent = `Confirme que você tem 18 anos ou mais para carregar o player. O acesso final continua sujeito às regras e ao login da ${streamingPlatformLabel(source.platform)}.`;
+  text.textContent = `Este aviso da Zytrix não verifica idade nem substitui os controles da ${streamingPlatformLabel(source.platform)}. Ao continuar, o player original será carregado e a plataforma poderá exigir login, confirmação de idade ou outras permissões.`;
   const actions = document.createElement('div');
   actions.className = 'mature-stream-actions';
   const confirm = document.createElement('button');
   confirm.type = 'button';
   confirm.className = 'btn btn-primary';
-  confirm.textContent = 'Tenho 18 anos ou mais';
+  confirm.textContent = 'Continuar para o player';
   confirm.onclick = () => {
     sessionStorage.setItem(MATURE_SESSION_KEY, '1');
     player.dataset.zytrixPlayerSignature = '';
@@ -143,8 +143,7 @@ async function renderTwitch(player, source, version) {
       autoplay: true,
       muted: true,
       theme: 'dark',
-      allowfullscreen: true,
-      parent: location.hostname ? [location.hostname] : undefined
+      allowfullscreen: true
     });
     embed.addEventListener(Twitch.Embed.VIDEO_READY, () => loading.remove());
     setTimeout(() => {
