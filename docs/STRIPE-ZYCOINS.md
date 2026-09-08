@@ -121,8 +121,8 @@ Não publicar regras novas antes do backend estar funcional, para não quebrar o
 
 - `api/create-checkout-session.js`
 - `api/stripe-webhook.js`
-- `api/_lib/firebase-admin.js`
-- `api/_lib/zycoins.js`
+- `server/firebase-admin.js`
+- `server/zycoins.js`
 - `assets/js/pagamento.js`
 - `package.json`
 - `.github/workflows/export-vercel-site.yml`
