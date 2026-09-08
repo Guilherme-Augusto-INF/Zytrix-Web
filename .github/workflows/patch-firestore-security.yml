@@ -1,0 +1,408 @@
+name: Patch Firestore Security
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-firestore-security.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch rules
+        shell: python
+        run: |
+          from pathlib import Path
+
+          paths = [
+              Path('firestore.rules'),
+              Path('firebase/firestore.rules'),
+              Path('REGRAS-PARA-COLAR-NO-FIREBASE.txt'),
+          ]
+          text = paths[0].read_text(encoding='utf-8')
+
+          old = '''    function isAdmin() {
+      return loggedIn()
+        && isAdminUid(request.auth.uid);
+    }
+'''
+          new = '''    function isAdmin() {
+      return loggedIn()
+        && isAdminUid(request.auth.uid);
+    }
+
+    function validAuthIdentity(data) {
+      return loggedIn()
+        && request.auth.token.email is string
+        && data.email == request.auth.token.email
+        && (
+          (
+            request.auth.token.firebase.sign_in_provider == "password"
+            && data.provider == "password"
+          )
+          ||
+          (
+            request.auth.token.firebase.sign_in_provider == "google.com"
+            && data.provider == "google"
+          )
+        );
+    }
+
+    function hasActivePenalty(uid) {
+      return exists(
+          /databases/$(database)/documents/moderationPenalties/$(uid)
+        )
+        && get(
+          /databases/$(database)/documents/moderationPenalties/$(uid)
+        ).data.active == true
+        && (
+          get(
+            /databases/$(database)/documents/moderationPenalties/$(uid)
+          ).data.expiresAt == null
+          || get(
+            /databases/$(database)/documents/moderationPenalties/$(uid)
+          ).data.expiresAt > request.time
+        );
+    }
+
+    function isBanned(uid) {
+      return hasActivePenalty(uid)
+        && get(
+          /databases/$(database)/documents/moderationPenalties/$(uid)
+        ).data.type == "ban";
+    }
+
+    function isChatRestricted(uid) {
+      return hasActivePenalty(uid)
+        && (
+          get(
+            /databases/$(database)/documents/moderationPenalties/$(uid)
+          ).data.type == "ban"
+          || get(
+            /databases/$(database)/documents/moderationPenalties/$(uid)
+          ).data.type == "mute"
+        );
+    }
+'''
+          if old not in text:
+              raise SystemExit('anchor isAdmin not found')
+          text = text.replace(old, new, 1)
+
+          old = '''      allow create:
+        if isOwner(uid)
+
+        && request.resource.data.uid == uid
+'''
+          new = '''      allow create:
+        if isOwner(uid)
+
+        && validAuthIdentity(request.resource.data)
+
+        && request.resource.data.uid == uid
+'''
+          if old not in text:
+              raise SystemExit('users create anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''          && request.resource.data.email is string
+
+          && (
+'''
+          new = '''          && request.resource.data.email is string
+
+          && validAuthIdentity(request.resource.data)
+
+          && (
+'''
+          if old not in text:
+              raise SystemExit('users update anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''        allow create:
+          if isOwner(uid)
+
+          && request.resource.data.channelId
+'''
+          new = '''        allow create:
+          if isOwner(uid)
+
+          && !isBanned(uid)
+
+          && request.resource.data.channelId
+'''
+          if old not in text:
+              raise SystemExit('following anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''      allow create:
+        if isOwner(channelId)
+
+        && request.resource.data.ownerUid
+'''
+          new = '''      allow create:
+        if isOwner(channelId)
+
+        && !isBanned(channelId)
+
+        && request.resource.data.ownerUid
+'''
+          if old not in text:
+              raise SystemExit('channel create anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''          isOwner(channelId)
+
+          && resource.data.ownerUid
+'''
+          new = '''          isOwner(channelId)
+
+          && !isBanned(channelId)
+
+          && resource.data.ownerUid
+'''
+          if old not in text:
+              raise SystemExit('channel update anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''        allow create:
+          if isOwner(followerUid)
+
+          && request.resource.data.uid
+'''
+          new = '''        allow create:
+          if isOwner(followerUid)
+
+          && !isBanned(followerUid)
+
+          && request.resource.data.uid
+'''
+          if old not in text:
+              raise SystemExit('followers create anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''        allow delete:
+          if isOwner(followerUid)
+          || isAdmin();
+'''
+          new = '''        allow delete:
+          if isOwner(followerUid)
+          || isOwner(channelId)
+          || isAdmin();
+'''
+          if old not in text:
+              raise SystemExit('followers delete anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''      allow create:
+        if loggedIn()
+
+        && request.resource.data.streamerUid
+'''
+          new = '''      allow create:
+        if loggedIn()
+
+        && !isBanned(request.auth.uid)
+
+        && request.resource.data.streamerUid
+'''
+          if old not in text:
+              raise SystemExit('stream create anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''          loggedIn()
+
+          && resource.data.streamerUid
+'''
+          new = '''          loggedIn()
+
+          && !isBanned(request.auth.uid)
+
+          && resource.data.streamerUid
+'''
+          if old not in text:
+              raise SystemExit('stream update anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''        allow create:
+          if loggedIn()
+          && request.resource.data.uid == request.auth.uid
+'''
+          new = '''        allow create:
+          if loggedIn()
+          && !isChatRestricted(request.auth.uid)
+          && request.resource.data.uid == request.auth.uid
+'''
+          if old not in text:
+              raise SystemExit('chat create anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''      allow delete:
+        if isAdmin();
+    }
+
+
+    // ==================================================
+    // ZY COINS - APOIOS EM LIVE
+'''
+          new = '''      allow delete:
+        if isAdmin()
+        || (
+          isOwner(uid)
+          && !existsAfter(
+            /databases/$(database)/documents/users/$(uid)
+          )
+        );
+    }
+
+
+    // ==================================================
+    // ZY COINS - APOIOS EM LIVE
+'''
+          if old not in text:
+              raise SystemExit('wallet delete anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''      return loggedIn()
+
+        && data.transactionId == transactionId
+'''
+          new = '''      return loggedIn()
+
+        && !isBanned(request.auth.uid)
+
+        && data.transactionId == transactionId
+'''
+          if old not in text:
+              raise SystemExit('support transaction anchor not found')
+          text = text.replace(old, new, 1)
+
+          marker = '''    // ==================================================
+    // CATEGORIAS
+    // ==================================================
+'''
+          moderation = '''    // ==================================================
+    // MODERAÇÃO GLOBAL
+    // ==================================================
+
+    match /moderationPenalties/{uid} {
+      allow get:
+        if isOwner(uid)
+        || isAdmin();
+
+      allow list:
+        if isAdmin();
+
+      allow create:
+        if isAdmin()
+        && request.resource.data.uid == uid
+        && request.resource.data.type in ["warning", "mute", "ban"]
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 1
+        && request.resource.data.reason.size() <= 500
+        && request.resource.data.active == true
+        && (
+          request.resource.data.expiresAt == null
+          || request.resource.data.expiresAt is timestamp
+        )
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "type",
+          "reason",
+          "active",
+          "expiresAt",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ]);
+
+      allow update:
+        if isAdmin()
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.type in ["warning", "mute", "ban"]
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 1
+        && request.resource.data.reason.size() <= 500
+        && request.resource.data.active is bool
+        && (
+          request.resource.data.expiresAt == null
+          || request.resource.data.expiresAt is timestamp
+        )
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "type",
+            "reason",
+            "active",
+            "expiresAt",
+            "updatedAt"
+          ]);
+
+      allow delete:
+        if false;
+    }
+
+    match /moderationActions/{actionId} {
+      allow read:
+        if isAdmin();
+
+      allow create:
+        if isAdmin()
+        && request.resource.data.targetUid is string
+        && request.resource.data.targetUid.size() >= 1
+        && request.resource.data.targetUid.size() <= 128
+        && request.resource.data.action in ["apply", "revoke"]
+        && request.resource.data.type in ["none", "warning", "mute", "ban"]
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 1
+        && request.resource.data.reason.size() <= 500
+        && request.resource.data.moderatorUid == request.auth.uid
+        && (
+          request.resource.data.expiresAt == null
+          || request.resource.data.expiresAt is timestamp
+        )
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.keys().hasOnly([
+          "targetUid",
+          "type",
+          "reason",
+          "action",
+          "moderatorUid",
+          "expiresAt",
+          "createdAt"
+        ]);
+
+      allow update, delete:
+        if false;
+    }
+
+
+'''
+          if marker not in text:
+              raise SystemExit('categories marker not found')
+          text = text.replace(marker, moderation + marker, 1)
+
+          for path in paths:
+              path.write_text(text, encoding='utf-8')
+
+      - name: Verify copies
+        run: |
+          cmp firestore.rules firebase/firestore.rules
+          cmp firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+      - name: Commit patched rules
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add firestore.rules firebase/firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+          git commit -m "security: reforça identidade, moderação e exclusão de conta"
+          git push
