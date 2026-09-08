@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
-import { adminAuth, adminDb } from './_lib/firebase-admin.js';
-import { getCoinPackage } from './_lib/zycoins.js';
+import { adminAuth, adminDb } from '../server/firebase-admin.js';
+import { getCoinPackage } from '../server/zycoins.js';
 
 const SITE_URL = (process.env.SITE_URL || 'https://zytrix-lives.vercel.app').replace(/\/$/, '');
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
