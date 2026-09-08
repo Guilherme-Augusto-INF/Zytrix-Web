@@ -19,8 +19,10 @@ jobs:
           ref: zycoin-support-notifications
 
       - name: Add private notification state rules
-        shell: python
+        shell: bash
         run: |
+          set -e
+          python3 <<'PY'
           from pathlib import Path
 
           files = [
@@ -29,12 +31,12 @@ jobs:
               Path("REGRAS-PARA-COLAR-NO-FIREBASE.txt"),
           ]
 
-          anchor = '''      // ================================================
+          anchor = """      // ================================================
       // HISTÓRICO
       // ================================================
-'''
+"""
 
-          block = '''      // ================================================
+          block = """      // ================================================
       // ESTADO DAS NOTIFICAÇÕES
       // ================================================
       //
@@ -80,7 +82,7 @@ jobs:
       }
 
 
-'''
+"""
 
           changed = []
           for path in files:
@@ -93,6 +95,7 @@ jobs:
               changed.append(str(path))
 
           print("Patched:", ", ".join(changed) if changed else "already patched")
+          PY
 
       - name: Commit synchronized rules
         shell: bash
