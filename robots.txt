@@ -2,4 +2,42 @@
 User-agent: *
 Allow: /
 
+# Áreas privadas, utilitárias ou sem valor para indexação
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /perfil
+Disallow: /perfil.html
+Disallow: /config-live
+Disallow: /config-live.html
+Disallow: /pagamento
+Disallow: /pagamento.html
+Disallow: /notificacoes
+Disallow: /notificacoes.html
+Disallow: /sair
+Disallow: /sair.html
+Disallow: /login
+Disallow: /login.html
+Disallow: /registro
+Disallow: /registro.html
+Disallow: /recuperar-senha
+Disallow: /recuperar-senha.html
+Disallow: /denunciar
+Disallow: /denunciar.html
+Disallow: /moderacao
+Disallow: /moderacao.html
+
+# Políticas continuam acessíveis por link, mas não entram no índice público
+Disallow: /termos
+Disallow: /termos.html
+Disallow: /privacidade
+Disallow: /privacidade.html
+Disallow: /diretrizes-da-comunidade
+Disallow: /diretrizes-da-comunidade.html
+Disallow: /denuncias-e-moderacao
+Disallow: /denuncias-e-moderacao.html
+Disallow: /conteudo-proibido
+Disallow: /conteudo-proibido.html
+Disallow: /politicas
+Disallow: /politicas.html
+
 Sitemap: https://zytrix-lives.vercel.app/sitemap.xml
