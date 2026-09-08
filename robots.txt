@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://zytrix-web.vercel.app/sitemap.xml
+Sitemap: https://zytrix-lives.vercel.app/sitemap.xml

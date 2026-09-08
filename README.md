@@ -6,7 +6,7 @@ Versão web tradicional do Zytrix, sem React e sem Figma Sites.
 
 A versão Web está publicada em:
 
-https://zytrix-web.vercel.app
+https://zytrix-lives.vercel.app
 
 ## Tecnologias
 
@@ -134,9 +134,9 @@ O projeto inclui `vercel.json` e está publicado como projeto `zytrix-web`.
 
 Produção:
 
-https://zytrix-web.vercel.app
+https://zytrix-lives.vercel.app
 
-Depois do deploy, adicione `zytrix-web.vercel.app` em **Firebase Authentication > Settings > Authorized domains**.
+Depois do deploy, adicione `zytrix-lives.vercel.app` em **Firebase Authentication > Settings > Authorized domains**.
 
 ## Estrutura principal
 

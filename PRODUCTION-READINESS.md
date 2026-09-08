@@ -36,7 +36,7 @@ A camada pública, a integração dos novos módulos e o deploy de produção pa
 
 Projeto: `zytrix-web`
 
-Produção: https://zytrix-web.vercel.app
+Produção: https://zytrix-lives.vercel.app
 
 Deployment validado: `dpl_9EyvSVadDeozeQt68H7yX3exf2GJ`
 
@@ -78,7 +78,7 @@ Depois de publicar as regras, validar no navegador:
 7. conta comum acessa `admin.html` e recebe acesso negado;
 8. conta com `admins/{uid}.active == true` abre o painel e visualiza métricas;
 9. repetir chat, mute, ban, mensagem fixada e Zy Coins para garantir ausência de regressões;
-10. validar login Google no domínio `zytrix-web.vercel.app`.
+10. validar login Google no domínio `zytrix-lives.vercel.app`.
 
 ## Critério para PASS final
 

@@ -1,4 +1,4 @@
-const PRODUCTION_ORIGIN = 'https://zytrix-web.vercel.app';
+const PRODUCTION_ORIGIN = 'https://zytrix-lives.vercel.app';
 
 const allowedParams = new Set(['stream', 'categoria', 'subcategoria']);
 const cleanPath = location.pathname.replace(/\.html$/i, '');
