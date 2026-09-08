@@ -1,0 +1,327 @@
+[
+  {
+    "slug": "termos",
+    "title": "Termos de Uso",
+    "description": "Como funciona o Zytrix, quais são as responsabilidades de quem participa e quais limites se aplicam ao serviço.",
+    "sections": [
+      {
+        "id": "plataforma",
+        "title": "1. O que o Zytrix oferece",
+        "body": "<p>O Zytrix organiza livestreams incorporadas da Twitch e da Kick, com contas, perfis, categorias, chat próprio, acompanhamento de canais e recursos demonstrativos de Zy Coins. O vídeo é fornecido pela plataforma externa; cadastrar seu link no Zytrix não transfere o controle da transmissão externa ao Zytrix.</p><p>Responsável pela operação: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>. Contato: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>. Esta minuta não representa contrato já vigente nem aprovação jurídica.</p>"
+      },
+      {
+        "id": "aceitacao",
+        "title": "2. Aceitação e documentos relacionados",
+        "body": "<p>Quando esta versão for formalmente ativada, a criação de conta deverá incluir manifestação expressa de concordância com os Termos e ciência da <a href=\"/privacidade\">Política de Privacidade</a>. A caixa não pode vir marcada. A ciência da política não é consentimento genérico para qualquer tratamento de dados.</p><p>As <a href=\"/diretrizes-da-comunidade\">Diretrizes da Comunidade</a>, as <a href=\"/conteudo-proibido\">Regras sobre Conteúdo Proibido</a> e a <a href=\"/denuncias-e-moderacao\">Política de Denúncias e Moderação</a> complementam estes Termos. Conflitos ou mudanças materiais precisam ser resolvidos antes de entrar em vigor.</p>"
+      },
+      {
+        "id": "elegibilidade",
+        "title": "3. Elegibilidade e menores de idade",
+        "body": "<p>A política etária ainda depende de decisão do responsável: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>. A interface atual não verifica idade nem oferece supervisão parental. Esta lacuna não deve ser interpretada como autorização para participação de todas as idades. Os controles necessários precisam ser definidos e testados antes de liberar o público escolhido.</p>"
+      },
+      {
+        "id": "conta",
+        "title": "4. Conta e segurança",
+        "body": "<p>O cadastro usa e-mail e senha ou autenticação Google. Forneça informações corretas e mantenha acesso ao e-mail cadastrado. O nome público pode ser um pseudônimo, desde que não engane sobre sua identidade nem viole direitos. Nunca use credenciais alheias.</p><p>Use senha exclusiva, não compartilhe códigos de recuperação e encerre a sessão em dispositivos compartilhados. O cadastro por senha solicita envio de e-mail de verificação; isso não significa que todas as funções já exijam e-mail verificado. Há recuperação de senha na tela de entrada.</p><p>O perfil permite alterar nome, foto por URL e biografia. As regras do repositório preveem intervalo de sete dias para alteração de nome; o funcionamento depende das regras efetivamente publicadas.</p>"
+      },
+      {
+        "id": "conteudo",
+        "title": "5. Conteúdo e direitos necessários",
+        "body": "<p>Você é responsável pelo que publica: mensagens, nome, foto, biografia, título, descrição, categoria, thumbnail e links da live. Antes de publicar, obtenha os direitos necessários sobre músicas, vídeos, imagens, marcas e participações de outras pessoas. Uma assinatura de serviço de música ou vídeo não implica autorização de retransmissão.</p><p>Você conserva os direitos sobre seu conteúdo. A licença proposta é não exclusiva e limitada a armazenar, processar tecnicamente, exibir e distribuir o conteúdo dentro das funções que você solicita ao Zytrix. Não autoriza vender sua obra, utilizá-la em publicidade externa ou treinar modelos de IA.</p><p>A licença termina quando o conteúdo deixa de ser necessário à função e é removido, ressalvadas cópias necessárias para obrigações legais ou exercício de direitos. Cópias em plataformas externas são administradas por essas plataformas. O Zytrix não adquire a propriedade de sua transmissão.</p>"
+      },
+      {
+        "id": "uso",
+        "title": "6. Uso permitido e propriedade do Zytrix",
+        "body": "<p>Use a plataforma para acompanhar e compartilhar conteúdo lícito, respeitando as demais pessoas. São vedados assédio, golpes, exposição de dados, manipulação de métricas, automação abusiva, ataques técnicos e evasão de sanções. Veja exemplos nas <a href=\"/diretrizes-da-comunidade\">Diretrizes</a>.</p><p>A identidade visual, os textos e o software do Zytrix são protegidos na medida dos direitos de seus titulares e das licenças aplicáveis. Estes Termos não restringem permissões concedidas por licenças de software livre nem direitos previstos em lei.</p>"
+      },
+      {
+        "id": "moedas",
+        "title": "7. Zy Coins e pedidos demonstrativos",
+        "body": "<p>O produto auditado utiliza carteiras de Zy Coins, apoios entre usuários e pedidos demonstrativos. A tela de pagamento informa que não processa pagamento real nem coleta dados reais de cartão. Não há promessa de saque, conversão em dinheiro, rendimento ou recebimento financeiro pelo streamer. Uma futura monetização real exige regras próprias e revisão antes da ativação.</p>"
+      },
+      {
+        "id": "moderacao",
+        "title": "8. Direitos autorais, denúncias e medidas",
+        "body": "<p>Conteúdo que viole direitos de terceiros ou as regras pode justificar remoção e outras medidas proporcionais. A avaliação deve considerar gravidade, contexto, risco e reincidência. Não é necessário seguir uma sequência de avisos em situações graves.</p><p>O chat possui ferramentas de remoção de mensagens, silenciamento e banimento no canal. Essas medidas não equivalem a suspensão global da conta. Fila de denúncias, registro de decisões e revisão estão em preparação e só devem ser anunciados como ativos após validação operacional. A página de <a href=\"/denuncias-e-moderacao\">Moderação</a> distingue as medidas disponíveis das pendentes.</p>"
+      },
+      {
+        "id": "terceiros",
+        "title": "9. Integrações e disponibilidade",
+        "body": "<p>Twitch e Kick têm termos, políticas e requisitos próprios. A conexão de um canal não comprova automaticamente sua titularidade. Você não pode apresentar um canal alheio como seu. Conteúdo indisponível ou encerrado no provedor pode deixar de funcionar no Zytrix.</p><p>O serviço depende de Vercel, Firebase/Google, conexão e serviços externos. Pode haver falhas, interrupções e manutenção. Não existe compromisso publicado de disponibilidade contínua. Esta descrição não exclui responsabilidades impostas pela legislação.</p>"
+      },
+      {
+        "id": "encerramento",
+        "title": "10. Encerramento e exclusão",
+        "body": "<p>Você pode parar de usar o serviço e sair da sessão. Sair da conta não apaga seus dados. A versão auditada não oferece exclusão completa de conta pela interface. O procedimento de solicitação, confirmação de identidade e tratamento de dados associados precisa ser ativado antes de se prometer essa funcionalidade. Contato para esse procedimento: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>.</p><p>Suspensão permanente e encerramento administrativo global exigem implementação e procedimento específicos; não devem ser confundidos com banimento do chat.</p>"
+      },
+      {
+        "id": "responsabilidade",
+        "title": "11. Responsabilidade e legislação",
+        "body": "<p>O usuário responde por seus atos e pelo conteúdo que publica conforme a legislação aplicável. O Zytrix responde nos limites de suas obrigações legais e de sua atuação. Nenhuma cláusula exclui direitos inderrogáveis, deveres de proteção de dados ou responsabilidades que não possam ser limitadas por contrato.</p><p>A proposta é reger estes Termos pela legislação brasileira, preservando competências e direitos previstos em lei, inclusive direitos do consumidor quando aplicáveis. A identificação da operação e as cláusulas finais precisam de revisão profissional antes da vigência.</p>"
+      },
+      {
+        "id": "mudancas",
+        "title": "12. Alterações e contato",
+        "body": "<p>Mudanças materiais devem ser destacadas, datadas e acompanhadas de preservação da versão anterior. Quando necessário, o produto deverá solicitar novo aceite; não se presume concordância retroativa. Consulte as versões na <a href=\"/politicas\">Central de políticas</a>.</p><p>Contato do responsável: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>.</p>"
+      }
+    ]
+  },
+  {
+    "slug": "privacidade",
+    "title": "Política de Privacidade",
+    "description": "Quais dados aparecem no funcionamento auditado do Zytrix, para que servem e quais definições ainda faltam.",
+    "sections": [
+      {
+        "id": "responsavel",
+        "title": "1. Responsável e alcance",
+        "body": "<p>Esta política descreve o código auditado do Zytrix e identifica configurações ainda não verificadas em produção. Controlador, identificação e canal para direitos dos titulares: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>. Não foi identificado encarregado formalmente designado; não se afirma que exista.</p>"
+      },
+      {
+        "id": "dados",
+        "title": "2. Dados, fontes e finalidades",
+        "body": "<div class=\"table-scroll\" role=\"region\" aria-label=\"Mapa de dados\" tabindex=\"0\"><table><thead><tr><th scope=\"col\">Dados e fonte</th><th scope=\"col\">Finalidade e armazenamento</th><th scope=\"col\">Fundamento a validar</th></tr></thead><tbody><tr><td>E-mail, UID e provedor, do cadastro/Google</td><td>Autenticação no Firebase Authentication; registro privado em users no Firestore</td><td>Execução da relação de serviço, no que for necessário</td></tr><tr><td>Nome, foto por URL e biografia, do usuário ou Google</td><td>Perfil público em profiles; cópias em dados do canal</td><td>Prestação das funções solicitadas; avaliar exposição opcional</td></tr><tr><td>Título, descrição, categoria, thumbnail, link externo e status, do streamer</td><td>Organizar e exibir canais e lives em channels e streams</td><td>Execução das funções de publicação solicitadas</td></tr><tr><td>UID, texto e data de mensagens, do participante</td><td>Chat próprio público no Firestore</td><td>Prestação do recurso de interação</td></tr><tr><td>Canais seguidos, seguidores e presença com horários</td><td>Acompanhamento e contagem de espectadores no Firestore</td><td>Prestação da função; necessidade da exposição deve ser revista</td></tr><tr><td>Saldo, apoios, valores demonstrativos e pedidos</td><td>Carteiras, transações e pedidos de Zy Coins no Firestore</td><td>Execução da função demonstrativa; não é processamento de cartão</td></tr><tr><td>Dados técnicos das requisições</td><td>Entrega do site, autenticação e segurança nos provedores</td><td>Prestação do serviço e segurança; legítimo interesse exige avaliação</td></tr><tr><td>Denunciante, referência, motivo, relato e data; decisão e administrador</td><td>Modelo preparado de denúncias e auditoria restritas no Firestore, ainda sem ativação confirmada</td><td>Segurança e proteção de direitos; avaliar art. 11 se houver dado sensível</td></tr><tr><td>UID, versão e data de aceite</td><td>Modelo preparado de comprovante de aceite; inativo enquanto documentos forem minutas</td><td>Prova da relação contratual e exercício de direitos, conforme necessário</td></tr></tbody></table></div><p>As hipóteses acima são propostas de enquadramento, não uma declaração de que o responsável já documentou cada base legal. Consentimento não é utilizado como justificativa universal. O responsável deve confirmar necessidade, finalidade e base de cada operação antes do lançamento.</p>"
+      },
+      {
+        "id": "publicidade",
+        "title": "3. O que é público e o que exige cuidado",
+        "body": "<p>Nome, foto, biografia, canais, metadados de lives e mensagens de chat têm leitura pública nas regras do repositório. Evite publicar e-mail, endereço, documentos ou informações de terceiros nesses campos. Conteúdo público pode ser copiado por outras pessoas e indexado por buscadores.</p><p>As regras existentes permitem leitura pública de seguidores e documentos de administradores, além de presença de espectadores por usuários autenticados. Portanto, seguir ou assistir não deve ser descrito como atividade inteiramente privada. A redução dessas exposições depende de migração técnica e teste.</p><p>E-mail de cadastro está em coleção privada para o titular e administração nas regras auditadas. Denúncias e notas internas não devem ser públicas. A configuração de produção precisa ser confirmada antes de garantir a proteção prevista.</p>"
+      },
+      {
+        "id": "terceiros",
+        "title": "4. Provedores e compartilhamento",
+        "body": "<p>Firebase/Google fornece autenticação, banco Firestore e arquivos do SDK. O login Google pode fornecer identificador, nome, e-mail e foto conforme a conta e as permissões de autenticação. A Vercel entrega o site.</p><p>Players incorporados da Twitch e Kick fazem requisições aos respectivos serviços. Imagens externas de perfis e thumbnails fazem requisições aos hosts das URLs escolhidas pelos usuários; esses hosts podem receber dados técnicos do navegador. Não é possível apresentar uma lista fixa desses hosts enquanto URLs arbitrárias forem aceitas.</p><p>Google/Firebase e Vercel podem exercer papéis diferentes conforme a operação e seus contratos; Twitch, Kick e hosts externos têm tratamentos próprios. Não foram confirmados contratos específicos, regiões de banco, configuração de logs ou suboperadores da conta do projeto.</p>"
+      },
+      {
+        "id": "navegador",
+        "title": "5. Cookies e armazenamento no navegador",
+        "body": "<p>O código utiliza localStorage para lembrar a live selecionada, seu nome/título e o pacote de Zy Coins escolhido. sessionStorage evita repetir avisos de lives na mesma sessão. A autenticação Firebase mantém estado de sessão no navegador conforme suas configurações e recursos disponíveis.</p><p>Limpar dados do site pode apagar preferências e encerrar a sessão, mas não exclui dados no Firestore. Players e provedores externos podem utilizar cookies ou armazenamento próprios. A medição exata desses terceiros ainda requer teste.</p><p>Existe um measurementId na configuração Firebase, mas não foi encontrada inicialização de Google Analytics ou Vercel Analytics no código auditado. Esse identificador isolado não comprova analytics ativo. A configuração externa não foi verificada.</p>"
+      },
+      {
+        "id": "retencao",
+        "title": "6. Retenção, eliminação e transferência internacional",
+        "body": "<p>Não foi encontrada rotina automática de expurgo dos dados descritos. Os prazos por finalidade e os procedimentos de exclusão ainda precisam ser definidos: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>. O limite de 90 segundos usado para contar presença ativa não apaga o documento do espectador.</p><p>Encerrar live ou sair da sessão não elimina perfil, histórico de mensagens, apoios ou pedidos. A exclusão de uma conta no Firebase Authentication não elimina automaticamente documentos e subcoleções do Firestore. O processo completo precisa tratar essas dependências e eventuais retenções legalmente justificadas.</p><p>Provedores globais podem tratar dados fora do Brasil. A região efetiva do Firestore, os locais de processamento e os mecanismos jurídicos de transferência internacional precisam ser confirmados pelo responsável. Não se afirma que os dados permaneçam em servidores brasileiros.</p>"
+      },
+      {
+        "id": "direitos",
+        "title": "7. Seus direitos e como exercê-los",
+        "body": "<p>Conforme a situação e a legislação, você pode pedir confirmação de tratamento, acesso, correção, informação sobre compartilhamento, anonimização, bloqueio ou eliminação de dados desnecessários, excessivos ou irregulares, portabilidade quando aplicável e revisão de decisões automatizadas nas hipóteses legais. Quando a base for consentimento, pode revogá-lo e solicitar eliminação nos termos da lei; pode se opor nas hipóteses aplicáveis.</p><p>O perfil permite correção de nome, foto e biografia dentro das regras da função. Ainda não existe procedimento público completo para as demais solicitações nem exclusão integral pela interface. Canal necessário: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>. Essa ausência é uma pendência do serviço e não elimina os direitos dos titulares.</p><p>A verificação de identidade deve ser proporcional; não envie senha, token ou cópia de documento em mensagens de chat ou denúncias. Eventual retenção precisa ter fundamento e ser explicada ao titular.</p>"
+      },
+      {
+        "id": "seguranca",
+        "title": "8. Segurança e denúncias",
+        "body": "<p>O projeto usa autenticação Firebase e regras de autorização Firestore. Chaves públicas de configuração do SDK não substituem essas regras. Não há certificação ou garantia de invulnerabilidade declarada.</p><p>O modelo de denúncias evita anexos e coleta apenas referência, motivo e relato curto. Relatos podem revelar dados sensíveis mesmo sem intenção; não inclua detalhes íntimos, material ilegal ou dados de terceiros desnecessários. O enquadramento e a eliminação de dados sensíveis recebidos exigem procedimento específico.</p><p>A confidencialidade não é absoluta: autoridades e pessoas autorizadas podem receber informações quando houver fundamento e necessidade. O denunciado não deve receber automaticamente a identidade do denunciante ou notas internas. Registros de decisão devem evitar reproduzir o conteúdo sensível.</p>"
+      },
+      {
+        "id": "menores",
+        "title": "9. Crianças e adolescentes",
+        "body": "<p>A idade mínima não foi definida. O cadastro atual não verifica idade nem oferece supervisão parental. A definição do público, avaliação do melhor interesse, riscos do conteúdo público e controles exigidos precisam ser resolvidos antes do lançamento. Não basta inserir uma idade nos Termos.</p>"
+      },
+      {
+        "id": "atualizacoes",
+        "title": "10. Atualizações",
+        "body": "<p>Esta é a primeira minuta, datada de 8 de setembro de 2026. Mudanças relevantes no tratamento precisam ser refletidas na política e comunicadas; novos usos não podem ser legitimados apenas por alteração silenciosa do texto. Consulte os <a href=\"/termos\">Termos</a> e a <a href=\"/politicas\">Central de políticas</a>.</p>"
+      }
+    ]
+  },
+  {
+    "slug": "diretrizes-da-comunidade",
+    "title": "Diretrizes da Comunidade",
+    "description": "Regras práticas para assistir, transmitir e conversar com respeito no Zytrix.",
+    "sections": [
+      {
+        "id": "respeito",
+        "title": "Respeite as pessoas",
+        "body": "<p>Discordar faz parte da conversa. Ameaçar, humilhar repetidamente alguém, perseguir ou organizar ataques não faz. Não transforme o chat em uma campanha contra um participante. Não ataque pessoas por raça, religião, deficiência, nacionalidade, sexo, orientação sexual ou identidade de gênero.</p>"
+      },
+      {
+        "id": "protecao",
+        "title": "Proteja a comunidade",
+        "body": "<p>Não publique endereço, telefone, documentos, localização em tempo real ou conversas privadas de outra pessoa sem justificativa legítima. Não compartilhe material de abuso sexual infantil nem imagens íntimas sem consentimento, mesmo com a intenção de denunciar. Informe a referência de forma segura quando o canal de denúncias estiver ativo.</p>"
+      },
+      {
+        "id": "direitos",
+        "title": "Publique conteúdo que você tem direito de usar",
+        "body": "<p>Antes de usar música, imagem, vídeo ou uma transmissão externa, verifique a autorização. Dar crédito não substitui permissão. Não cadastre o canal de outra pessoa como se fosse seu. Paródia e crítica devem ser reconhecíveis e respeitar os direitos aplicáveis.</p>"
+      },
+      {
+        "id": "manipulacao",
+        "title": "Não manipule a plataforma",
+        "body": "<p>Não use bots para inflar visualizações ou seguidores, automatizar spam, distribuir denúncias falsas ou manipular Zy Coins. Não crie contas para contornar uma restrição. Título, categoria e thumbnail devem representar a live; não use promessa de prêmio falso para atrair cliques.</p>"
+      },
+      {
+        "id": "prejuizo",
+        "title": "Não use o Zytrix para prejudicar outras pessoas",
+        "body": "<p>Não divulgue golpes, pedidos enganosos de dinheiro, links de phishing ou arquivos maliciosos. Não incentive automutilação, violência ou desafios que exponham pessoas a lesão grave. Conversas de apoio, prevenção, jornalismo e educação são diferentes de incentivo ao dano.</p>"
+      },
+      {
+        "id": "seguranca",
+        "title": "Respeite as regras de segurança",
+        "body": "<p>Não peça senhas ou códigos de acesso. Não tente invadir contas, explorar falhas para acessar dados ou derrubar o serviço. Uma falha deve ser comunicada ao responsável sem exposição de dados; o canal formal ainda precisa ser definido.</p><p>Não assuma que seguir um canal ou assistir a uma live seja totalmente privado: consulte a <a href=\"/privacidade\">Política de Privacidade</a>.</p>"
+      },
+      {
+        "id": "contexto",
+        "title": "Contexto e aplicação das regras",
+        "body": "<p>Educação, arte, notícia e conscientização podem exigir discutir temas difíceis. O contexto deve ser claro e necessário, sem glorificar agressões, expor vítimas ou fornecer instruções de dano. Um aviso de “conteúdo educativo” sozinho não torna tudo permitido.</p><p>As categorias detalhadas estão em <a href=\"/conteudo-proibido\">Conteúdo Proibido</a>. Para entender medidas, limites e revisão, consulte <a href=\"/denuncias-e-moderacao\">Denúncias e Moderação</a>. Um erro de boa-fé ao denunciar não equivale a denúncia falsa deliberada.</p>"
+      }
+    ]
+  },
+  {
+    "slug": "denuncias-e-moderacao",
+    "title": "Política de Denúncias e Moderação",
+    "description": "Como comunicar violações, quais medidas existem no chat e o que ainda depende de ativação.",
+    "sections": [
+      {
+        "id": "estado",
+        "title": "1. Disponibilidade atual",
+        "body": "<p>O chat auditado possui remoção de mensagens, silenciamento temporário e banimento no canal, por streamer ou administrador conforme as permissões. O painel administrativo original é de leitura.</p><p>O novo formulário, a fila restrita e os registros de decisão estão preparados para validação. O recebimento não está anunciado como operacional enquanto faltarem publicação/teste das regras e responsável pela fila. Acesse <a href=\"/denunciar\">Denunciar</a> para verificar a disponibilidade. Não há equipe 24 horas nem prazo de resposta confirmado.</p>"
+      },
+      {
+        "id": "enviar",
+        "title": "2. Quem pode denunciar e o que informar",
+        "body": "<p>O fluxo preparado permite que contas autenticadas com e-mail verificado informem perfil, livestream ou mensagem específica. Uma pessoa sem conta ou sem acesso à conta precisa de canal alternativo: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>.</p><p>Informe a referência, o motivo e, se necessário, um relato curto com contexto e data/hora observada. Não envie material de abuso infantil, imagens íntimas, documentos, senhas ou cópias extensas de conteúdo ofensivo. O formulário não aceita anexos.</p><p>Uma live encerrada ainda pode ser denunciada se seu registro existir. Para um alvo já removido, repetição de ocorrência após denúncia anterior ou perda de acesso, o canal alternativo precisa ser definido. A versão mínima limita uma denúncia em aberto por conta e referência e exige intervalo entre envios. Após o encerramento, novos fatos podem gerar outra denúncia.</p>"
+      },
+      {
+        "id": "analise",
+        "title": "3. Recebimento e análise",
+        "body": "<p>Somente a confirmação de gravação significa recebimento técnico. Isso não significa que houve análise nem que uma punição será aplicada. A avaliação deve considerar a referência, a regra pertinente, contexto, gravidade, risco, alcance e reincidência quando comprovada.</p><p>Risco imediato, exploração infantil e ameaças graves precisam de prioridade operacional. A fila mínima não faz detecção automática de risco nem substitui avaliação humana. Não há prazo de atendimento estabelecido. O responsável deve manter rotina de acompanhamento antes de ativar o recebimento.</p>"
+      },
+      {
+        "id": "medidas",
+        "title": "4. Medidas e limites técnicos",
+        "body": "<ul><li><strong>Nenhuma violação identificada:</strong> encerrar com justificativa quando os elementos não indicarem infração; não equivale a declarar que toda a conduta da pessoa foi investigada.</li><li><strong>Informação insuficiente ou alvo indisponível:</strong> registrar a limitação, sem presumir culpa.</li><li><strong>Aviso:</strong> requer comunicação real ao destinatário; o painel não deve registrar aviso enviado sem um canal de entrega.</li><li><strong>Remoção de mensagem:</strong> já existe no chat. Uma remoção externa à fila precisa ser verificada antes de constar como resultado.</li><li><strong>Restrição de chat:</strong> silenciamento ou banimento no canal, conforme controles existentes.</li><li><strong>Remoção de live/perfil e restrição de recurso:</strong> exigem ação autorizada e teste de seus efeitos, inclusive prevenção de republicação quando pertinente.</li><li><strong>Suspensão temporária ou permanente global:</strong> não está implementada no produto auditado; banir no chat não suspende a conta no Firebase Authentication.</li><li><strong>Outras medidas necessárias:</strong> preservar somente dados necessários e atender determinações legais aplicáveis mediante procedimento adequado.</li></ul><p>Não existe escala obrigatória de punições. Um risco grave pode exigir ação imediata; medidas devem ser proporcionais e justificadas. Não existe banimento global automático por número de denúncias.</p>"
+      },
+      {
+        "id": "privacidade",
+        "title": "5. Privacidade e abuso",
+        "body": "<p>O desenho da fila limita denúncias à administração autorizada; cada denunciante pode consultar apenas seus próprios envios. O denunciado não recebe acesso automático ao relato ou à identidade. Confidencialidade absoluta não pode ser prometida, por exemplo diante de obrigação legal.</p><p>Não use denúncias para intimidar ou punir discordâncias. Spam e falsidade deliberada podem justificar análise de abuso. Volume de denúncias não comprova infração; denúncias honestas que não se confirmem não devem ser punidas por esse motivo. Saiba como os dados são tratados na <a href=\"/privacidade\">Política de Privacidade</a>.</p>"
+      },
+      {
+        "id": "revisao",
+        "title": "6. Contestação e revisão",
+        "body": "<p>Uma pessoa afetada deve poder contestar remoção, restrição de chat ou outra decisão aplicável apresentando a referência, a medida e a razão da discordância. A revisão pode confirmar, ajustar ou reverter a decisão; não garante reversão.</p><p>O procedimento de recurso e seu canal público ainda precisam ser implementados: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>. A fila mínima de denúncias não substitui recurso, e o denunciado não deve precisar acessar a denúncia privada para contestar uma sanção. Não se promete revisão independente ou equipe disponível continuamente.</p>"
+      },
+      {
+        "id": "autorais",
+        "title": "7. Direitos autorais",
+        "body": "<p>Uma comunicação deve identificar a obra, a referência no Zytrix, o direito alegado, a relação do solicitante com o titular e uma forma de contato adequada no canal definido. Inclua apenas o necessário para localizar e analisar a possível violação. A outra parte pode apresentar autorização, licença ou fundamento para o uso.</p><p>Remoção, preservação de informações e tratamento de reincidência dependem de avaliação e obrigações aplicáveis. Não se adota automaticamente um procedimento estrangeiro. O canal para titulares sem conta e o processo de contestação precisam ser definidos antes do lançamento.</p>"
+      },
+      {
+        "id": "emergencias",
+        "title": "8. Perigo imediato e solicitações legais",
+        "body": "<p>As denúncias do Zytrix não substituem serviços de emergência. Em perigo imediato, procure os serviços de emergência ou autoridades competentes da sua localidade; não espere uma resposta do site. Para material de abuso infantil, não baixe, copie nem redistribua o material.</p><p>Solicitações de autoridades devem ter autenticidade, competência, objeto e necessidade avaliados pelo responsável. Canal institucional e procedimento de preservação e encaminhamento: <strong>[INFORMAÇÃO NECESSÁRIA ANTES DO LANÇAMENTO]</strong>. Não se promete encaminhamento automático que não exista.</p>"
+      }
+    ]
+  },
+  {
+    "slug": "conteudo-proibido",
+    "title": "Regras sobre Conteúdo Proibido",
+    "description": "Categorias de conteúdo vedado e critérios de contexto para uma aplicação consistente.",
+    "sections": [
+      {
+        "id": "alcance",
+        "title": "Como estas regras são aplicadas",
+        "body": "<p>As regras abrangem vídeo incorporado, chat, perfis, nomes, imagens, títulos, descrições, categorias e links. Esta versão é uma proposta em preparação. A publicação de regras não cria monitoramento automático nem uma equipe de moderação.</p><p>O contexto importa: educação, jornalismo, documentário, história, arte, prevenção e denúncia não equivalem por si só à promoção de dano. Também não são exceção irrestrita. A avaliação deve considerar necessidade, risco, exposição de vítimas e se o conteúdo facilita abuso.</p>"
+      },
+      {
+        "id": "infantil",
+        "title": "A. Exploração e abuso sexual infantil",
+        "body": "<p><strong>Proibido:</strong> Material, transmissão, aliciamento, sexualização ou facilitação de exploração e abuso sexual de crianças ou adolescentes, inclusive representações sintéticas de abuso.</p><p><strong>Contexto limitado:</strong> Prevenção e proteção podem ser discutidas sem material de abuso, identificação de vítimas ou descrição sexual explícita. Nenhum contexto autoriza redistribuir material de abuso.</p>"
+      },
+      {
+        "id": "sexual",
+        "title": "B. Conteúdo sexual e nudez",
+        "body": "<p><strong>Proibido:</strong> Pornografia, atos sexuais explícitos, exploração sexual, imagens íntimas sem consentimento ou ameaça de divulgá-las. Para a minuta, propõe-se vedar nudez sexualizada e oferta de serviços sexuais.</p><p><strong>Contexto limitado:</strong> Discussões não gráficas de saúde, educação e arte podem ser avaliadas. Os limites de nudez não sexual e a classificação etária dependem da aprovação do responsável; não há liberação automática por alegação artística.</p>"
+      },
+      {
+        "id": "violencia",
+        "title": "C. Violência e ameaças",
+        "body": "<p><strong>Proibido:</strong> Ameaça real de agressão, incentivo a atacar alguém, planejamento ou instrução para violência contra pessoas.</p><p><strong>Contexto limitado:</strong> Notícias e discussão histórica sem incitação, exposição desnecessária de vítimas ou instruções operacionais de ataque.</p>"
+      },
+      {
+        "id": "extremismo",
+        "title": "D. Terrorismo e extremismo violento",
+        "body": "<p><strong>Proibido:</strong> Promoção, recrutamento, arrecadação para violência ou apoio operacional a terrorismo e extremismo violento.</p><p><strong>Contexto limitado:</strong> Análise jornalística, histórica e crítica claramente contextualizada, sem propaganda ou facilitação.</p>"
+      },
+      {
+        "id": "odio",
+        "title": "E. Ódio e discriminação",
+        "body": "<p><strong>Proibido:</strong> Incitação à violência ou exclusão discriminatória, desumanização e ataques a pessoas por características como raça, etnia, religião, nacionalidade, deficiência, sexo, orientação sexual ou identidade de gênero.</p><p><strong>Contexto limitado:</strong> Crítica a ideias, instituições e políticas sem atacar a dignidade ou segurança de pessoas por essas características.</p>"
+      },
+      {
+        "id": "assedio",
+        "title": "F. Assédio e bullying",
+        "body": "<p><strong>Proibido:</strong> Perseguição direcionada, humilhação repetida, assédio sexual, campanhas coordenadas de intimidação e incentivo a hostilizar uma pessoa.</p><p><strong>Contexto limitado:</strong> Discordância, crítica e humor que não se convertam em ameaça, perseguição ou exposição indevida.</p>"
+      },
+      {
+        "id": "dados",
+        "title": "G. Privacidade e exposição de dados",
+        "body": "<p><strong>Proibido:</strong> Doxxing, divulgação indevida de documentos, endereços, localização, credenciais ou conversas privadas; exposição íntima sem consentimento.</p><p><strong>Contexto limitado:</strong> Informação pública relevante pode exigir avaliação de finalidade e risco. Já estar na internet não autoriza qualquer republicação.</p>"
+      },
+      {
+        "id": "autolesao",
+        "title": "H. Automutilação e suicídio",
+        "body": "<p><strong>Proibido:</strong> Incentivo, glorificação, desafios ou instruções que facilitem suicídio, automutilação ou práticas alimentares perigosas.</p><p><strong>Contexto limitado:</strong> Relatos de recuperação, apoio e prevenção sem instruções de métodos, competição de danos ou imagens gráficas. Pessoas buscando ajuda devem ser acolhidas, sem punição automática por falar de sofrimento.</p>"
+      },
+      {
+        "id": "ilegal",
+        "title": "I. Facilitação de atividades ilegais",
+        "body": "<p><strong>Proibido:</strong> Uso da plataforma para organizar, oferecer ou facilitar crimes, exploração de pessoas e comercialização ilícita.</p><p><strong>Contexto limitado:</strong> Debate de leis, crítica, pesquisa e cobertura de fatos sem facilitar a prática criminosa.</p>"
+      },
+      {
+        "id": "regulados",
+        "title": "J. Drogas e produtos regulados",
+        "body": "<p><strong>Proibido:</strong> Venda ilegal, incentivo a consumo perigoso, instruções de fabricação ilícita e oferta de produtos regulados a quem não pode adquiri-los.</p><p><strong>Contexto limitado:</strong> Informação de saúde, prevenção e debate de políticas sem comércio irregular nem instruções perigosas. Publicidade ou venda de produtos regulados não está autorizada nesta proposta.</p>"
+      },
+      {
+        "id": "armas",
+        "title": "K. Armas e práticas perigosas",
+        "body": "<p><strong>Proibido:</strong> Comércio ilegal de armas, instruções para fabricação de explosivos ou armas destinadas a dano, ameaças e desafios com risco grave.</p><p><strong>Contexto limitado:</strong> História, esporte regular e informação de segurança sem instruções que facilitem dano ou comércio indevido.</p>"
+      },
+      {
+        "id": "fraude",
+        "title": "L. Fraude e golpes",
+        "body": "<p><strong>Proibido:</strong> Phishing, engenharia social para roubar dados, falso suporte, falsa premiação, investimento fraudulento ou cobrança enganosa.</p><p><strong>Contexto limitado:</strong> Educação antifraude com dados fictícios e sem links operacionais maliciosos.</p>"
+      },
+      {
+        "id": "malware",
+        "title": "M. Malware e abuso técnico",
+        "body": "<p><strong>Proibido:</strong> Distribuir malware, roubar credenciais, invadir contas, explorar acesso indevido a dados ou coordenar indisponibilidade de serviços.</p><p><strong>Contexto limitado:</strong> Discussão defensiva e pesquisa autorizada sem exposição de segredos ou facilitação de ataque contra terceiros.</p>"
+      },
+      {
+        "id": "spam",
+        "title": "N. Spam e manipulação",
+        "body": "<p><strong>Proibido:</strong> Mensagens repetitivas abusivas, bots para inflar visualizações/seguidores, manipulação de Zy Coins e campanhas de denúncias falsas.</p><p><strong>Contexto limitado:</strong> Ferramentas acessíveis e automações autorizadas que respeitem limites, finalidade e direitos dos usuários.</p>"
+      },
+      {
+        "id": "autoria",
+        "title": "O. Propriedade intelectual",
+        "body": "<p><strong>Proibido:</strong> Publicar ou retransmitir conteúdo sem direitos necessários, distribuir cópias ilícitas ou remover atribuição exigida por licença.</p><p><strong>Contexto limitado:</strong> Uso autorizado ou amparado por exceção legal aplicável, avaliado no contexto. Crédito sozinho não substitui autorização.</p>"
+      },
+      {
+        "id": "identidade",
+        "title": "P. Impersonação",
+        "body": "<p><strong>Proibido:</strong> Fingir ser outra pessoa, empresa, autoridade ou suporte oficial de modo a enganar; vincular canal alheio como próprio.</p><p><strong>Contexto limitado:</strong> Pseudônimo, fã-clube e paródia claramente identificados, sem confusão intencional.</p>"
+      },
+      {
+        "id": "engano",
+        "title": "Q. Conteúdo enganoso prejudicial",
+        "body": "<p><strong>Proibido:</strong> Falsificação de alertas de emergência, falsa identidade de serviços essenciais e instruções fraudulentas com risco concreto de dano à saúde, segurança ou patrimônio.</p><p><strong>Contexto limitado:</strong> Opinião, sátira identificada, erro de boa-fé e debate não são automaticamente proibidos. É necessário apontar a falsidade relevante, o contexto e o risco, e não apenas discordar.</p>"
+      },
+      {
+        "id": "grafico",
+        "title": "R. Conteúdo gráfico",
+        "body": "<p><strong>Proibido:</strong> Gore para chocar, glorificar sofrimento ou humilhar vítimas; exposição gráfica desnecessária de ferimentos graves, morte ou crueldade.</p><p><strong>Contexto limitado:</strong> Notícia, documentário e prevenção podem ser analisados com minimização de imagens, dignidade e contexto. O produto não possui um sistema validado de acesso restrito por idade; um aviso não cria essa proteção.</p>"
+      },
+      {
+        "id": "evasao",
+        "title": "S. Evasão de sanções",
+        "body": "<p><strong>Proibido:</strong> Usar outras contas, terceiros ou meios técnicos para contornar uma restrição válida de chat ou outra medida efetivamente aplicada.</p><p><strong>Contexto limitado:</strong> Contestação pelo procedimento de revisão, sem novas violações. Não se deve presumir evasão apenas por semelhança de nome ou uso de rede compartilhada.</p>"
+      },
+      {
+        "id": "denuncia",
+        "title": "Como comunicar e contestar",
+        "body": "<p>Consulte a <a href=\"/denuncias-e-moderacao\">Política de Denúncias e Moderação</a> para disponibilidade, medidas, limitações e revisão. Não redistribua conteúdo ilegal para denunciá-lo. Veja também as <a href=\"/diretrizes-da-comunidade\">Diretrizes</a> e os <a href=\"/termos\">Termos de Uso</a>.</p>"
+      }
+    ]
+  }
+]

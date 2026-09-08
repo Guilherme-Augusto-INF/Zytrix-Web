@@ -69,6 +69,7 @@ export function footer() {
           <a href="sobre.html">Sobre</a>
         </div>
       </div>
+<nav class="governance-links" aria-label="Políticas e segurança"><a href="/termos">Termos</a><a href="/privacidade">Privacidade</a><a href="/diretrizes-da-comunidade">Diretrizes da Comunidade</a><a href="/denuncias-e-moderacao">Denúncias e Moderação</a><a href="/conteudo-proibido">Conteúdo Proibido</a><a href="/politicas">Central de políticas</a></nav>
     </footer>
   `;
 }

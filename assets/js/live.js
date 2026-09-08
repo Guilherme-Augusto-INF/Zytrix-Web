@@ -1,8 +1,10 @@
 import { auth, db, onAuthStateChanged, doc, getDoc, onSnapshot, collection, query, orderBy, limit, setDoc, deleteDoc, runTransaction, serverTimestamp, ensureWallet } from './firebase.js';
 import { header, footer, escapeHtml, escapeAttr } from './ui.js';
+import { reportLink } from './report-link.js';
 import { getStreamingEmbed, streamingPlatformLabel } from './streaming.js';
 header('ao-vivo');
 footer();
+reportLink(document.querySelector('#live-root'), 'stream', new URLSearchParams(location.search).get('stream') || localStorage.getItem('zytrixSelectedStream') || '');
 const streamId = new URLSearchParams(location.search).get('stream') ||
     localStorage.getItem('zytrixSelectedStream') ||
     '';
@@ -526,6 +528,10 @@ function renderChatMessages(messages) {
             article.append(avatar, body);
         }
         container.appendChild(article);
+        if (!isOwn) {
+            reportLink(article, "chat", message.id, streamId, "append");
+            reportLink(article, "profile", message.uid, "-", "append");
+        }
     }
     container.scrollTop = container.scrollHeight;
 }

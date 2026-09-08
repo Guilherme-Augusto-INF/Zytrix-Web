@@ -1,0 +1,27 @@
+name: Governance checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feat/platform-governance]
+permissions:
+  contents: read
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci --ignore-scripts --no-audit
+      - run: npm run build
+      - run: npm test
+      - run: npm run check
+      - run: npm run test:rules
+      - run: git diff --exit-code -- '*.html' assets/js/policy-release.js

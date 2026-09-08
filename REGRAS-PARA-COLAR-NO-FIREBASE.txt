@@ -1499,6 +1499,107 @@ service cloud.firestore {
         );
     }
 
+
+    // Governance v1: disabled until privileged operational activation.
+    function reportsEnabled() {
+      return exists(/databases/$(database)/documents/governance/config)
+        && get(/databases/$(database)/documents/governance/config).data.reportsEnabled == true
+        && get(/databases/$(database)/documents/governance/config).data.rulesVersion == "governance-1";
+    }
+    function reportIdValid(id) { return id is string && id.matches('^[A-Za-z0-9_-]{1,128}$'); }
+    function validReportTarget(d) {
+      return reportIdValid(d.targetId) && reportIdValid(d.contextId) && (
+        (d.targetType == 'profile' && d.contextId == '-' && d.targetId != request.auth.uid
+          && exists(/databases/$(database)/documents/profiles/$(d.targetId)))
+        || (d.targetType == 'stream' && d.contextId == '-'
+          && exists(/databases/$(database)/documents/streams/$(d.targetId))
+          && get(/databases/$(database)/documents/streams/$(d.targetId)).data.streamerUid != request.auth.uid)
+        || (d.targetType == 'chat'
+          && exists(/databases/$(database)/documents/streams/$(d.contextId))
+          && exists(/databases/$(database)/documents/streams/$(d.contextId)/chat/$(d.targetId))
+          && get(/databases/$(database)/documents/streams/$(d.contextId)/chat/$(d.targetId)).data.uid != request.auth.uid)
+      );
+    }
+    function reportCreateValid(id,d) {
+      return loggedIn() && request.auth.token.email_verified == true && reportsEnabled()
+        && d.keys().hasOnly(['reporterUid','targetType','targetId','contextId','reason','description','key','status','createdAt'])
+        && d.reporterUid == request.auth.uid && d.status == 'open' && d.createdAt == request.time
+        && reportIdValid(id) && validReportTarget(d)
+        && d.reason in ['child_safety','sexual','violence','hate','harassment','privacy','self_harm','fraud','malware','spam','copyright','impersonation','other']
+        && d.description is string && d.description.size() <= 1000
+        && d.key == d.targetType + ':' + d.contextId + ':' + d.targetId
+        && getAfter(/databases/$(database)/documents/reportKeys/$(request.auth.uid)/targets/$(d.key)).data.reportId == id
+        && getAfter(/databases/$(database)/documents/reportKeys/$(request.auth.uid)/targets/$(d.key)).data.updatedAt == request.time
+        && getAfter(/databases/$(database)/documents/reportLimits/$(request.auth.uid)).data.reportId == id
+        && getAfter(/databases/$(database)/documents/reportLimits/$(request.auth.uid)).data.lastAt == request.time;
+    }
+    function newOwnReport(id,uid) {
+      let d = getAfter(/databases/$(database)/documents/reports/$(id)).data;
+      return !exists(/databases/$(database)/documents/reports/$(id))
+        && d.reporterUid == uid && d.createdAt == request.time && d.status == 'open';
+    }
+    match /governance/config {
+      allow get: if true;
+      allow list, write: if false;
+    }
+    match /reports/{id} {
+      allow get: if loggedIn() && (isAdmin() || resource.data.reporterUid == request.auth.uid);
+      allow list: if loggedIn() && request.query.limit <= 50 && (isAdmin() || resource.data.reporterUid == request.auth.uid);
+      allow create: if reportCreateValid(id,request.resource.data);
+      allow update: if isAdmin() && resource.data.status == 'open' && request.resource.data.status == 'closed'
+        && request.resource.data.resolution in ['no_violation','insufficient','target_unavailable','reviewed']
+        && request.resource.data.reviewedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','resolution','reviewedAt'])
+        && !exists(/databases/$(database)/documents/moderationAudit/$(id))
+        && getAfter(/databases/$(database)/documents/moderationAudit/$(id)).data.resolution == request.resource.data.resolution
+        && getAfter(/databases/$(database)/documents/moderationAudit/$(id)).data.moderatorUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/moderationAudit/$(id)).data.createdAt == request.time;
+      allow delete: if false;
+    }
+    match /reportLimits/{uid} {
+      allow get: if isOwner(uid);
+      allow list, delete: if false;
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['reportId','lastAt']) && request.resource.data.lastAt == request.time
+        && (!exists(/databases/$(database)/documents/reportLimits/$(uid)) || resource.data.lastAt + duration.value(60,'s') <= request.time)
+        && newOwnReport(request.resource.data.reportId,uid);
+    }
+    match /reportKeys/{uid}/targets/{key} {
+      allow get: if isOwner(uid);
+      allow list, delete: if false;
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['reportId','updatedAt']) && request.resource.data.updatedAt == request.time
+        && newOwnReport(request.resource.data.reportId,uid)
+        && getAfter(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.key == key
+        && (!exists(/databases/$(database)/documents/reportKeys/$(uid)/targets/$(key))
+          || get(/databases/$(database)/documents/reports/$(resource.data.reportId)).data.status == 'closed');
+    }
+    match /moderationAudit/{id} {
+      allow get: if isAdmin();
+      allow list: if isAdmin() && request.query.limit <= 50;
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['reportId','action','resolution','moderatorUid','createdAt'])
+        && request.resource.data.reportId == id && request.resource.data.action == 'close_report'
+        && request.resource.data.moderatorUid == request.auth.uid && request.resource.data.createdAt == request.time
+        && get(/databases/$(database)/documents/reports/$(id)).data.status == 'open'
+        && getAfter(/databases/$(database)/documents/reports/$(id)).data.status == 'closed'
+        && getAfter(/databases/$(database)/documents/reports/$(id)).data.reviewedAt == request.time
+        && getAfter(/databases/$(database)/documents/reports/$(id)).data.resolution == request.resource.data.resolution;
+      allow update, delete: if false;
+    }
+    match /policyAcceptances/{uid}/versions/{version} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid)
+        && get(/databases/$(database)/documents/governance/config).data.termsEffective == true
+        && version == get(/databases/$(database)/documents/governance/config).data.termsVersion
+        && request.resource.data.keys().hasOnly(['uid','termsVersion','privacyVersion','acceptedAt'])
+        && request.resource.data.uid == uid && request.resource.data.termsVersion == version
+        && request.resource.data.privacyVersion == get(/databases/$(database)/documents/governance/config).data.privacyVersion
+        && request.resource.data.acceptedAt == request.time;
+      allow update, delete: if false;
+    }
+
     match /{document=**} {
 
       allow read, write:
