@@ -1,101 +1,145 @@
 <!doctype html>
 <html lang="pt-BR">
- <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width,initial-scale=1" name="viewport"/>
-  <title>
-   Zytrix — Início
-  </title>
-  <link href="assets/css/styles.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="assets/css/features.css">
-  <meta name="description" content="Assista às melhores lives, descubra novos criadores e faça parte da comunidade Zytrix.">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Zytrix — Plataforma de livestream</title>
+  <meta name="description" content="A Zytrix é um projeto acadêmico de plataforma web para descobrir, assistir e acompanhar livestreams integradas da Twitch e Kick.">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <link rel="canonical" href="https://zytrix-web.vercel.app/">
   <meta property="og:locale" content="pt_BR">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Zytrix">
-  <meta property="og:title" content="Zytrix — Início">
-  <meta property="og:description" content="Assista às melhores lives, descubra novos criadores e faça parte da comunidade Zytrix.">
+  <meta property="og:title" content="Zytrix — Plataforma de livestream">
+  <meta property="og:description" content="Projeto acadêmico de plataforma web para descobrir, assistir e acompanhar livestreams integradas da Twitch e Kick.">
   <meta property="og:url" content="https://zytrix-web.vercel.app/">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Zytrix — Início">
-  <meta name="twitter:description" content="Assista às melhores lives, descubra novos criadores e faça parte da comunidade Zytrix.">
-</head>
- <body>
-  <div data-header="">
-  </div>
-  <main class="main">
-   <div class="container">
-    <section class="hero">
-     <div class="eyebrow">
-      • Transmissões em tempo real
-     </div>
-     <h1>
-      O seu mundo.
-      <span>
-       Ao vivo.
-      </span>
-     </h1>
-     <p>
-      Assista às melhores lives, descubra novos criadores e faça parte da comunidade Zytrix.
-     </p>
-    </section>
-    <section class="section">
-     <div class="section-head">
-      <h2>
-       Destaques
-      </h2>
-      <a class="muted" href="ao-vivo.html">
-       Ver todas →
-      </a>
-     </div>
-     <div class="grid grid-3" id="featured">
-      <div class="state">
-       Carregando...
-      </div>
-     </div>
-    </section>
-    <section class="section">
-     <div class="section-head">
-      <div>
-       <div class="eyebrow">
-        Explore
-       </div>
-       <h2>
-        Encontre seu conteúdo
-       </h2>
-      </div>
-     </div>
-     <div class="grid grid-4" id="home-categories">
-     </div>
-    </section>
-    <section class="section">
-     <div class="section-head">
-      <div>
-       <div class="eyebrow">
-        Agora
-       </div>
-       <h2>
-        Ao vivo na Zytrix
-       </h2>
-      </div>
-      <a class="btn" href="ao-vivo.html">
-       Explorar lives
-      </a>
-     </div>
-     <div class="grid grid-4" id="live-now">
-      <div class="state">
-       Carregando...
-      </div>
-     </div>
-    </section>
-   </div>
-  </main>
-  <div data-footer="">
-  </div>
-  <script src="assets/js/home.js" type="module">
+  <meta name="twitter:title" content="Zytrix — Plataforma de livestream">
+  <meta name="twitter:description" content="Projeto acadêmico de plataforma web para descobrir, assistir e acompanhar livestreams integradas da Twitch e Kick.">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/features.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://zytrix-web.vercel.app/#website",
+        "url": "https://zytrix-web.vercel.app/",
+        "name": "Zytrix",
+        "description": "Projeto acadêmico de plataforma web para descobrir, assistir e acompanhar livestreams integradas da Twitch e Kick.",
+        "inLanguage": "pt-BR",
+        "publisher": { "@id": "https://zytrix-web.vercel.app/#organization" }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://zytrix-web.vercel.app/#organization",
+        "name": "Zytrix",
+        "url": "https://zytrix-web.vercel.app/",
+        "description": "Projeto acadêmico de TCC responsável pela plataforma web Zytrix."
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://zytrix-web.vercel.app/#app",
+        "name": "Zytrix",
+        "url": "https://zytrix-web.vercel.app/",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Web",
+        "browserRequirements": "Navegador com JavaScript habilitado.",
+        "inLanguage": "pt-BR",
+        "description": "Aplicação web de livestream que organiza transmissões integradas da Twitch e Kick e oferece contas, perfis, categorias, chat em tempo real, acompanhamento de streamers e recursos de Zy Coins no protótipo.",
+        "featureList": [
+          "Descoberta de transmissões ao vivo",
+          "Players integrados da Twitch e Kick",
+          "Contas e perfis de usuário",
+          "Configuração manual de live",
+          "Chat em tempo real",
+          "Seguir streamers e acompanhar lives",
+          "Categorias e subcategorias",
+          "Zy Coins no protótipo"
+        ],
+        "publisher": { "@id": "https://zytrix-web.vercel.app/#organization" }
+      }
+    ]
+  }
   </script>
-   <script type="module" src="assets/js/global-features.js"></script>
+</head>
+<body>
+  <div data-header></div>
+  <main class="main">
+    <div class="container">
+      <section class="hero">
+        <div class="eyebrow">Plataforma web de livestream</div>
+        <h1>Descubra e acompanhe <span>transmissões ao vivo.</span></h1>
+        <p>A Zytrix é um projeto acadêmico de TCC que reúne descoberta de conteúdo, perfis e recursos de comunidade em torno de transmissões incorporadas da Twitch e Kick.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:22px">
+          <a class="btn btn-primary" href="ao-vivo.html">Ver lives</a>
+          <a class="btn" href="recursos.html">Entender como funciona</a>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="o-que-e-zytrix">
+        <div class="eyebrow">Resposta direta</div>
+        <h2 id="o-que-e-zytrix">O que é a Zytrix?</h2>
+        <div class="grid grid-2">
+          <div class="card panel">
+            <h3>Uma plataforma web de livestream</h3>
+            <p class="muted">A Zytrix organiza transmissões, categorias, perfis e interação entre usuários. A transmissão de vídeo não é gerada pela Zytrix: ela é feita na Twitch ou Kick e exibida na plataforma por meio de players incorporados.</p>
+          </div>
+          <div class="card panel">
+            <h3>Para espectadores e criadores</h3>
+            <p class="muted">Espectadores podem descobrir lives, assistir, usar o chat e seguir streamers. Criadores podem vincular uma transmissão, configurar título, descrição, categoria e thumbnail e controlar manualmente o status da live na Zytrix.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="como-funciona">
+        <div class="eyebrow">Fluxo do produto</div>
+        <h2 id="como-funciona">Como funciona?</h2>
+        <div class="grid grid-4">
+          <article class="card panel"><h3>1. Criar conta</h3><p class="muted">O cadastro aceita e-mail e senha ou login com Google. No cadastro por e-mail, a Zytrix envia uma mensagem de verificação.</p></article>
+          <article class="card panel"><h3>2. Explorar</h3><p class="muted">As páginas Início, Ao Vivo e Categorias organizam transmissões por status e tema.</p></article>
+          <article class="card panel"><h3>3. Assistir e interagir</h3><p class="muted">A página da live carrega o player da Twitch ou Kick, chat em tempo real e recursos de comunidade.</p></article>
+          <article class="card panel"><h3>4. Transmitir</h3><p class="muted">O streamer transmite na Twitch ou Kick e usa a configuração da Zytrix para definir os dados da live e marcar manualmente quando ela está ao vivo ou offline.</p></article>
+        </div>
+        <p style="margin-top:18px"><a href="faq.html">Ver perguntas frequentes sobre contas, lives, categorias e perfis →</a></p>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Destaques</h2>
+          <a class="muted" href="ao-vivo.html">Ver todas →</a>
+        </div>
+        <div class="grid grid-3" id="featured"><div class="state">Carregando...</div></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div><div class="eyebrow">Explore</div><h2>Encontre conteúdo por categoria</h2></div>
+          <a class="muted" href="categorias.html">Ver categorias →</a>
+        </div>
+        <div class="grid grid-4" id="home-categories"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div><div class="eyebrow">Agora</div><h2>Ao vivo na Zytrix</h2></div>
+          <a class="btn" href="ao-vivo.html">Explorar lives</a>
+        </div>
+        <div class="grid grid-4" id="live-now"><div class="state">Carregando...</div></div>
+      </section>
+
+      <section class="section">
+        <div class="grid grid-2">
+          <div class="card panel"><h2>Recursos da Zytrix</h2><p class="muted">Veja de forma pública e detalhada como funcionam contas, perfis, transmissão, chat, categorias, seguidores, notificações e Zy Coins.</p><a href="recursos.html">Conhecer os recursos →</a></div>
+          <div class="card panel"><h2>Sobre o projeto</h2><p class="muted">Entenda o objetivo acadêmico da Zytrix, sua relação com Twitch, Kick e Firebase e o que a plataforma realmente faz.</p><a href="sobre.html">Ler sobre a Zytrix →</a></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <div data-footer></div>
+  <script type="module" src="assets/js/home.js"></script>
+  <script type="module" src="assets/js/global-features.js"></script>
 </body>
 </html>
