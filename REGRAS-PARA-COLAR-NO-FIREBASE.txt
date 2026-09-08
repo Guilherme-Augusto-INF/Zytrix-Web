@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ==================================================
-    // FUNÇÕES
+    // FUNÇÕES GERAIS
     // ==================================================
 
     function loggedIn() {
@@ -30,6 +30,37 @@ service cloud.firestore {
         && isAdminUid(request.auth.uid);
     }
 
+    // Garante que o e-mail/provedor gravado em users/{uid}
+    // realmente corresponde ao usuário autenticado.
+    function validAuthIdentity(data) {
+      return loggedIn()
+
+        && request.auth.token.email is string
+
+        && data.email
+            == request.auth.token.email
+
+        && (
+          (
+            request.auth.token.firebase.sign_in_provider
+                == "password"
+
+            && data.provider
+                == "password"
+          )
+
+          ||
+
+          (
+            request.auth.token.firebase.sign_in_provider
+                == "google.com"
+
+            && data.provider
+                == "google"
+          )
+        );
+    }
+
     function validUsername(username) {
       return username is string
         && username.size() >= 2
@@ -48,6 +79,57 @@ service cloud.firestore {
 
 
     // ==================================================
+    // MODERAÇÃO GLOBAL - FUNÇÕES
+    // ==================================================
+
+    function hasActivePenalty(uid) {
+      return exists(
+          /databases/$(database)/documents/moderationPenalties/$(uid)
+        )
+
+        && get(
+          /databases/$(database)/documents/moderationPenalties/$(uid)
+        ).data.active == true
+
+        && (
+          get(
+            /databases/$(database)/documents/moderationPenalties/$(uid)
+          ).data.expiresAt == null
+
+          ||
+
+          get(
+            /databases/$(database)/documents/moderationPenalties/$(uid)
+          ).data.expiresAt > request.time
+        );
+    }
+
+    function isBanned(uid) {
+      return hasActivePenalty(uid)
+
+        && get(
+          /databases/$(database)/documents/moderationPenalties/$(uid)
+        ).data.type == "ban";
+    }
+
+    function isChatRestricted(uid) {
+      return hasActivePenalty(uid)
+
+        && (
+          get(
+            /databases/$(database)/documents/moderationPenalties/$(uid)
+          ).data.type == "ban"
+
+          ||
+
+          get(
+            /databases/$(database)/documents/moderationPenalties/$(uid)
+          ).data.type == "mute"
+        );
+    }
+
+
+    // ==================================================
     // ZY COINS - FUNÇÕES AUXILIARES
     // ==================================================
 
@@ -57,18 +139,28 @@ service cloud.firestore {
         && amount <= 100000;
     }
 
+    function validSupportAlertSound(sound) {
+      return sound in ["coin", "bell", "pop", "soft", "none"];
+    }
+
     function validWalletShape(data, uid) {
       return data.uid == uid
+
         && data.balance is int
         && data.balance >= 0
+
         && data.totalSent is int
         && data.totalSent >= 0
+
         && data.totalReceived is int
         && data.totalReceived >= 0
+
         && data.lastTransactionId is string
         && data.lastTransactionId.size() <= 128
+
         && data.createdAt is timestamp
         && data.updatedAt is timestamp
+
         && data.keys().hasAll([
           "uid",
           "balance",
@@ -78,6 +170,7 @@ service cloud.firestore {
           "createdAt",
           "updatedAt"
         ])
+
         && data.keys().hasOnly([
           "uid",
           "balance",
@@ -96,19 +189,25 @@ service cloud.firestore {
           && coins == 100
           && priceCents == 490
         )
+
         ||
+
         (
           packageId == "zy500"
           && coins == 500
           && priceCents == 1490
         )
+
         ||
+
         (
           packageId == "zy1200"
           && coins == 1200
           && priceCents == 2990
         )
+
         ||
+
         (
           packageId == "zy2500"
           && coins == 2500
@@ -118,27 +217,55 @@ service cloud.firestore {
 
     function validSenderWalletUpdate(uid) {
       let txId = request.resource.data.lastTransactionId;
+
       let tx = getAfter(
         /databases/$(database)/documents/zyCoinTransactions/$(txId)
       ).data;
 
       return isOwner(uid)
-        && validWalletShape(request.resource.data, uid)
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.updatedAt == request.time
-        && tx.transactionId == txId
-        && tx.type == "stream_support"
-        && tx.status == "completed"
-        && tx.fromUid == uid
-        && tx.toUid != uid
-        && validCoinAmount(tx.amount)
+
+        && validWalletShape(
+          request.resource.data,
+          uid
+        )
+
+        && request.resource.data.uid
+            == resource.data.uid
+
+        && request.resource.data.createdAt
+            == resource.data.createdAt
+
+        && request.resource.data.updatedAt
+            == request.time
+
+        && tx.transactionId
+            == txId
+
+        && tx.type
+            == "stream_support"
+
+        && tx.status
+            == "completed"
+
+        && tx.fromUid
+            == uid
+
+        && tx.toUid
+            != uid
+
+        && validCoinAmount(
+          tx.amount
+        )
+
         && request.resource.data.balance
             == resource.data.balance - tx.amount
+
         && request.resource.data.totalSent
             == resource.data.totalSent + tx.amount
+
         && request.resource.data.totalReceived
             == resource.data.totalReceived
+
         && request.resource.data
             .diff(resource.data)
             .affectedKeys()
@@ -152,28 +279,57 @@ service cloud.firestore {
 
     function validRecipientWalletUpdate(uid) {
       let txId = request.resource.data.lastTransactionId;
+
       let tx = getAfter(
         /databases/$(database)/documents/zyCoinTransactions/$(txId)
       ).data;
 
       return loggedIn()
+
         && request.auth.uid != uid
-        && validWalletShape(request.resource.data, uid)
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.updatedAt == request.time
-        && tx.transactionId == txId
-        && tx.type == "stream_support"
-        && tx.status == "completed"
-        && tx.fromUid == request.auth.uid
-        && tx.toUid == uid
-        && validCoinAmount(tx.amount)
+
+        && validWalletShape(
+          request.resource.data,
+          uid
+        )
+
+        && request.resource.data.uid
+            == resource.data.uid
+
+        && request.resource.data.createdAt
+            == resource.data.createdAt
+
+        && request.resource.data.updatedAt
+            == request.time
+
+        && tx.transactionId
+            == txId
+
+        && tx.type
+            == "stream_support"
+
+        && tx.status
+            == "completed"
+
+        && tx.fromUid
+            == request.auth.uid
+
+        && tx.toUid
+            == uid
+
+        && validCoinAmount(
+          tx.amount
+        )
+
         && request.resource.data.balance
             == resource.data.balance + tx.amount
+
         && request.resource.data.totalSent
             == resource.data.totalSent
+
         && request.resource.data.totalReceived
             == resource.data.totalReceived + tx.amount
+
         && request.resource.data
             .diff(resource.data)
             .affectedKeys()
@@ -187,28 +343,58 @@ service cloud.firestore {
 
     function validRecipientWalletCreate(uid) {
       let txId = request.resource.data.lastTransactionId;
+
       let tx = getAfter(
         /databases/$(database)/documents/zyCoinTransactions/$(txId)
       ).data;
 
       return loggedIn()
+
         && request.auth.uid != uid
-        && validWalletShape(request.resource.data, uid)
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time
-        && tx.transactionId == txId
-        && tx.type == "stream_support"
-        && tx.status == "completed"
-        && tx.fromUid == request.auth.uid
-        && tx.toUid == uid
-        && validCoinAmount(tx.amount)
-        && request.resource.data.balance == 500 + tx.amount
-        && request.resource.data.totalSent == 0
-        && request.resource.data.totalReceived == tx.amount;
+
+        && validWalletShape(
+          request.resource.data,
+          uid
+        )
+
+        && request.resource.data.createdAt
+            == request.time
+
+        && request.resource.data.updatedAt
+            == request.time
+
+        && tx.transactionId
+            == txId
+
+        && tx.type
+            == "stream_support"
+
+        && tx.status
+            == "completed"
+
+        && tx.fromUid
+            == request.auth.uid
+
+        && tx.toUid
+            == uid
+
+        && validCoinAmount(
+          tx.amount
+        )
+
+        && request.resource.data.balance
+            == 500 + tx.amount
+
+        && request.resource.data.totalSent
+            == 0
+
+        && request.resource.data.totalReceived
+            == tx.amount;
     }
 
     function validSupportTransactionCreate(transactionId) {
       let data = request.resource.data;
+
       let streamPath =
         /databases/$(database)/documents/streams/$(data.streamId);
 
@@ -218,15 +404,26 @@ service cloud.firestore {
       let recipientPath =
         /databases/$(database)/documents/wallets/$(data.toUid);
 
-      let senderBefore = get(senderPath).data;
-      let senderAfter = getAfter(senderPath).data;
-      let recipientAfter = getAfter(recipientPath).data;
+      let senderBefore =
+        get(senderPath).data;
+
+      let senderAfter =
+        getAfter(senderPath).data;
+
+      let recipientAfter =
+        getAfter(recipientPath).data;
 
       return loggedIn()
 
-        && data.transactionId == transactionId
+        && !isBanned(
+          request.auth.uid
+        )
 
-        && data.fromUid == request.auth.uid
+        && data.transactionId
+            == transactionId
+
+        && data.fromUid
+            == request.auth.uid
 
         && data.toUid is string
         && data.toUid.size() > 0
@@ -235,13 +432,18 @@ service cloud.firestore {
         && data.streamId is string
         && data.streamId.size() > 0
 
-        && validCoinAmount(data.amount)
+        && validCoinAmount(
+          data.amount
+        )
 
-        && data.type == "stream_support"
+        && data.type
+            == "stream_support"
 
-        && data.status == "completed"
+        && data.status
+            == "completed"
 
-        && data.createdAt == request.time
+        && data.createdAt
+            == request.time
 
         && data.keys().hasAll([
           "transactionId",
@@ -265,7 +467,9 @@ service cloud.firestore {
           "createdAt"
         ])
 
-        && exists(streamPath)
+        && exists(
+          streamPath
+        )
 
         && get(streamPath).data.streamerUid
             == data.toUid
@@ -273,11 +477,15 @@ service cloud.firestore {
         && get(streamPath).data.status
             == "live"
 
-        && exists(senderPath)
+        && exists(
+          senderPath
+        )
 
-        && senderBefore.balance is int
+        && senderBefore.balance
+            is int
 
-        && senderBefore.balance >= data.amount
+        && senderBefore.balance
+            >= data.amount
 
         && senderAfter.uid
             == data.fromUid
@@ -311,7 +519,9 @@ service cloud.firestore {
 
         && (
           (
-            exists(recipientPath)
+            exists(
+              recipientPath
+            )
 
             && recipientAfter.createdAt
                 == get(recipientPath).data.createdAt
@@ -331,7 +541,9 @@ service cloud.firestore {
           ||
 
           (
-            !exists(recipientPath)
+            !exists(
+              recipientPath
+            )
 
             && recipientAfter.createdAt
                 == request.time
@@ -353,6 +565,16 @@ service cloud.firestore {
     // ADMINS
     // ==================================================
 
+    // ATENÇÃO:
+    // Esta coleção permanece legível porque o frontend
+    // usa admins/{uid} para badges e controle visual.
+    //
+    // Não armazenar email, nome, telefone ou dados
+    // pessoais aqui. Use somente campos operacionais
+    // mínimos, como:
+    //
+    // active: true
+    //
     match /admins/{uid} {
 
       allow read:
@@ -364,7 +586,7 @@ service cloud.firestore {
 
 
     // ==================================================
-    // USERS
+    // USERS - DADOS PRIVADOS DE CONTA
     // ==================================================
 
     match /users/{uid} {
@@ -377,23 +599,43 @@ service cloud.firestore {
       allow create:
         if isOwner(uid)
 
-        && request.resource.data.uid == uid
-
-        && request.resource.data.zytrixId is string
-        && request.resource.data.zytrixId.size() >= 5
-        && request.resource.data.zytrixId.size() <= 64
-
-        && request.resource.data.email is string
-        && request.resource.data.email.size() <= 320
-
-        && (
-          request.resource.data.provider == "password"
-          ||
-          request.resource.data.provider == "google"
+        && validAuthIdentity(
+          request.resource.data
         )
 
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.lastLoginAt == request.time
+        && request.resource.data.uid
+            == uid
+
+        && request.resource.data.zytrixId
+            is string
+
+        && request.resource.data.zytrixId.size()
+            >= 5
+
+        && request.resource.data.zytrixId.size()
+            <= 64
+
+        && request.resource.data.email
+            is string
+
+        && request.resource.data.email.size()
+            <= 320
+
+        && (
+          request.resource.data.provider
+              == "password"
+
+          ||
+
+          request.resource.data.provider
+              == "google"
+        )
+
+        && request.resource.data.createdAt
+            == request.time
+
+        && request.resource.data.lastLoginAt
+            == request.time
 
         && request.resource.data.keys().hasAll([
           "uid",
@@ -419,6 +661,10 @@ service cloud.firestore {
         (
           isOwner(uid)
 
+          && validAuthIdentity(
+            request.resource.data
+          )
+
           && request.resource.data.uid
               == resource.data.uid
 
@@ -431,10 +677,10 @@ service cloud.firestore {
           && request.resource.data.lastLoginAt
               == request.time
 
-          && request.resource.data.email is string
+          && request.resource.data.email
+              is string
 
           && (
-
             (
               resource.data.keys().hasAll([
                 "zytrixId"
@@ -459,10 +705,14 @@ service cloud.firestore {
                 "zytrixId"
               ])
 
-              && request.resource.data.zytrixId is string
+              && request.resource.data.zytrixId
+                  is string
 
-              && request.resource.data.zytrixId.size() >= 5
-              && request.resource.data.zytrixId.size() <= 64
+              && request.resource.data.zytrixId.size()
+                  >= 5
+
+              && request.resource.data.zytrixId.size()
+                  <= 64
 
               && request.resource.data
                   .diff(resource.data)
@@ -483,6 +733,23 @@ service cloud.firestore {
 
           && request.resource.data.uid
               == resource.data.uid
+
+          && request.resource.data.zytrixId
+              == resource.data.zytrixId
+
+          && request.resource.data.provider
+              == resource.data.provider
+
+          && request.resource.data.createdAt
+              == resource.data.createdAt
+
+          && request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                "email",
+                "lastLoginAt"
+              ])
         );
 
 
@@ -504,6 +771,8 @@ service cloud.firestore {
         allow create:
           if isOwner(uid)
 
+          && !isBanned(uid)
+
           && request.resource.data.channelId
               == channelId
 
@@ -517,6 +786,52 @@ service cloud.firestore {
 
         allow update:
           if false;
+
+        allow delete:
+          if isOwner(uid)
+          || isAdmin();
+      }
+
+
+      // ================================================
+      // ESTADO DAS NOTIFICAÇÕES
+      // ================================================
+      // Documento privado da própria conta usado para
+      // sincronizar o estado lido/não lido dos apoios
+      // recebidos entre dispositivos.
+      // ================================================
+
+      match /notificationState/{stateId} {
+
+        allow read:
+          if isOwner(uid)
+          || isAdmin();
+
+        allow create, update:
+          if isOwner(uid)
+
+          && stateId == "zycoins"
+
+          && request.resource.data.uid
+              == uid
+
+          && request.resource.data.lastSupportSeenAt
+              == request.time
+
+          && request.resource.data.updatedAt
+              == request.time
+
+          && request.resource.data.keys().hasAll([
+            "uid",
+            "lastSupportSeenAt",
+            "updatedAt"
+          ])
+
+          && request.resource.data.keys().hasOnly([
+            "uid",
+            "lastSupportSeenAt",
+            "updatedAt"
+          ]);
 
         allow delete:
           if isOwner(uid)
@@ -557,7 +872,8 @@ service cloud.firestore {
       allow create:
         if isOwner(uid)
 
-        && request.resource.data.uid == uid
+        && request.resource.data.uid
+            == uid
 
         && validUsername(
           request.resource.data.username
@@ -620,8 +936,6 @@ service cloud.firestore {
           )
 
           && (
-
-            // FOTO / BIO
             (
               request.resource.data.username
                   == resource.data.username
@@ -640,7 +954,6 @@ service cloud.firestore {
 
             ||
 
-            // USERNAME A CADA 7 DIAS
             (
               request.resource.data.username
                   != resource.data.username
@@ -700,6 +1013,8 @@ service cloud.firestore {
       allow create:
         if isOwner(channelId)
 
+        && !isBanned(channelId)
+
         && request.resource.data.ownerUid
             == request.auth.uid
 
@@ -723,6 +1038,8 @@ service cloud.firestore {
         if
         (
           isOwner(channelId)
+
+          && !isBanned(channelId)
 
           && resource.data.ownerUid
               == request.auth.uid
@@ -774,6 +1091,8 @@ service cloud.firestore {
         allow create:
           if isOwner(followerUid)
 
+          && !isBanned(followerUid)
+
           && request.resource.data.uid
               == followerUid
 
@@ -790,6 +1109,7 @@ service cloud.firestore {
 
         allow delete:
           if isOwner(followerUid)
+          || isOwner(channelId)
           || isAdmin();
       }
 
@@ -813,7 +1133,6 @@ service cloud.firestore {
 
     match /streams/{streamId} {
 
-      // Home pode mostrar lives sem login.
       allow read:
         if true;
 
@@ -822,9 +1141,12 @@ service cloud.firestore {
       // CRIAR LIVE
       // ================================================
 
-      // playbackURL pode apontar para um canal da Twitch ou da Kick.
       allow create:
         if loggedIn()
+
+        && !isBanned(
+          request.auth.uid
+        )
 
         && request.resource.data.streamerUid
             == request.auth.uid
@@ -840,6 +1162,22 @@ service cloud.firestore {
 
         && request.resource.data.viewerCount
             == 0
+
+        && (
+          !request.resource.data.keys().hasAll([
+            "supportAlertSound"
+          ])
+          || validSupportAlertSound(
+            request.resource.data.supportAlertSound
+          )
+        )
+
+        && (
+          !request.resource.data.keys().hasAll([
+            "matureContent"
+          ])
+          || request.resource.data.matureContent is bool
+        )
 
         && request.resource.data.keys().hasAll([
           "streamerUid",
@@ -868,7 +1206,9 @@ service cloud.firestore {
           "startedAt",
           "endedAt",
           "createdAt",
-          "viewerCount"
+          "viewerCount",
+          "supportAlertSound",
+          "matureContent"
         ]);
 
 
@@ -880,6 +1220,10 @@ service cloud.firestore {
         if
         (
           loggedIn()
+
+          && !isBanned(
+            request.auth.uid
+          )
 
           && resource.data.streamerUid
               == request.auth.uid
@@ -899,7 +1243,22 @@ service cloud.firestore {
           && request.resource.data.viewerCount
               == resource.data.viewerCount
 
-          // STREAMER NÃO PODE ALTERAR VIEWERCOUNT
+          && (
+            !request.resource.data.keys().hasAll([
+              "supportAlertSound"
+            ])
+            || validSupportAlertSound(
+              request.resource.data.supportAlertSound
+            )
+          )
+
+          && (
+            !request.resource.data.keys().hasAll([
+              "matureContent"
+            ])
+            || request.resource.data.matureContent is bool
+          )
+
           && request.resource.data
               .diff(resource.data)
               .affectedKeys()
@@ -911,13 +1270,14 @@ service cloud.firestore {
                 "status",
                 "playbackURL",
                 "startedAt",
-                "endedAt"
+                "endedAt",
+                "supportAlertSound",
+                "matureContent"
               ])
         )
 
         ||
 
-        // ADMIN PODE ALTERAR PARA TESTES.
         (
           isAdmin()
 
@@ -933,45 +1293,155 @@ service cloud.firestore {
       // EXCLUIR LIVE
       // ================================================
 
+      // Mesmo um usuário banido pode excluir seus dados.
       allow delete:
         if
         (
           loggedIn()
-          && resource.data.streamerUid == request.auth.uid
+
+          && resource.data.streamerUid
+              == request.auth.uid
         )
+
         || isAdmin();
+
+
+      // ================================================
+      // ALERTAS PÚBLICOS DE APOIO
+      // ================================================
+      // Evento sanitizado criado na mesma operação
+      // atômica da transação stream_support.
+      // Não expõe saldo, carteira ou pedido de compra.
+      // ================================================
+
+      match /supportAlerts/{alertId} {
+
+        allow read:
+          if true;
+
+        allow create:
+          if loggedIn()
+
+          && request.resource.data.transactionId
+              == alertId
+
+          && request.resource.data.fromUid
+              == request.auth.uid
+
+          && request.resource.data.streamId
+              == streamId
+
+          && validCoinAmount(
+            request.resource.data.amount
+          )
+
+          && request.resource.data.createdAt
+              == request.time
+
+          && request.resource.data.keys().hasOnly([
+            "transactionId",
+            "fromUid",
+            "streamId",
+            "amount",
+            "createdAt"
+          ])
+
+          && get(
+            /databases/$(database)/documents/streams/$(streamId)
+          ).data.status == "live"
+
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.transactionId == alertId
+
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.fromUid == request.auth.uid
+
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.toUid == get(
+            /databases/$(database)/documents/streams/$(streamId)
+          ).data.streamerUid
+
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.streamId == streamId
+
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.amount == request.resource.data.amount
+
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.type == "stream_support"
+
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.status == "completed"
+
+          && getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.createdAt == request.time;
+
+        allow update, delete:
+          if false;
+      }
+
 
       // ================================================
       // CHAT EM TEMPO REAL
       // ================================================
 
       match /chat/{messageId} {
+
         allow read:
           if true;
 
         allow create:
           if loggedIn()
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.text is string
-          && request.resource.data.text.size() >= 1
-          && request.resource.data.text.size() <= 300
-          && request.resource.data.createdAt == request.time
+
+          && !isChatRestricted(
+            request.auth.uid
+          )
+
+          && request.resource.data.uid
+              == request.auth.uid
+
+          && request.resource.data.text
+              is string
+
+          && request.resource.data.text.size()
+              >= 1
+
+          && request.resource.data.text.size()
+              <= 300
+
+          && request.resource.data.createdAt
+              == request.time
+
           && get(
             /databases/$(database)/documents/streams/$(streamId)
           ).data.status == "live"
+
           && (
             !exists(
               /databases/$(database)/documents/streams/$(streamId)/chatBans/$(request.auth.uid)
             )
-            || (
+
+            ||
+
+            (
               get(
                 /databases/$(database)/documents/streams/$(streamId)/chatBans/$(request.auth.uid)
               ).data.expiresAt != null
+
               && get(
                 /databases/$(database)/documents/streams/$(streamId)/chatBans/$(request.auth.uid)
               ).data.expiresAt <= request.time
             )
           )
+
           && request.resource.data.keys().hasOnly([
             "uid",
             "text",
@@ -983,14 +1453,23 @@ service cloud.firestore {
 
         allow delete:
           if loggedIn()
+
           && (
-            resource.data.uid == request.auth.uid
+            resource.data.uid
+                == request.auth.uid
+
             || isAdmin()
-            || (
+
+            ||
+
+            (
               get(
                 /databases/$(database)/documents/streams/$(streamId)
               ).data.streamerUid == request.auth.uid
-              && !isAdminUid(resource.data.uid)
+
+              && !isAdminUid(
+                resource.data.uid
+              )
             )
           );
       }
@@ -1001,35 +1480,65 @@ service cloud.firestore {
       // ================================================
 
       match /chatBans/{uid} {
+
         allow read:
           if loggedIn()
+
           && (
-            request.auth.uid == uid
-            || get(
+            request.auth.uid
+                == uid
+
+            ||
+
+            get(
               /databases/$(database)/documents/streams/$(streamId)
             ).data.streamerUid == request.auth.uid
-            || isAdmin()
+
+            ||
+
+            isAdmin()
           );
+
 
         allow create, update:
           if loggedIn()
+
           && (
             isAdmin()
-            || (
+
+            ||
+
+            (
               get(
                 /databases/$(database)/documents/streams/$(streamId)
               ).data.streamerUid == request.auth.uid
+
               && !isAdminUid(uid)
             )
           )
-          && request.resource.data.uid == uid
-          && request.resource.data.bannedBy == request.auth.uid
-          && request.resource.data.reason in ["mute", "ban"]
-          && request.resource.data.createdAt == request.time
+
+          && request.resource.data.uid
+              == uid
+
+          && request.resource.data.bannedBy
+              == request.auth.uid
+
+          && request.resource.data.reason
+              in ["mute", "ban"]
+
+          && request.resource.data.createdAt
+              == request.time
+
           && (
-            request.resource.data.expiresAt == null
-            || request.resource.data.expiresAt is timestamp
+            request.resource.data.expiresAt
+                == null
+
+            ||
+
+            request.resource.data.expiresAt
+                is timestamp
           )
+
           && request.resource.data.keys().hasOnly([
             "uid",
             "bannedBy",
@@ -1038,14 +1547,20 @@ service cloud.firestore {
             "expiresAt"
           ]);
 
+
         allow delete:
           if loggedIn()
+
           && (
             isAdmin()
-            || (
+
+            ||
+
+            (
               get(
                 /databases/$(database)/documents/streams/$(streamId)
               ).data.streamerUid == request.auth.uid
+
               && !isAdminUid(uid)
             )
           );
@@ -1053,30 +1568,48 @@ service cloud.firestore {
 
 
       // ================================================
-      // MENSAGEM FIXADA DO CHAT
+      // MENSAGEM FIXADA
       // ================================================
 
       match /chatConfig/{docId} {
+
         allow read:
           if true;
 
         allow create, update:
           if docId == "main"
+
           && loggedIn()
+
           && (
             get(
               /databases/$(database)/documents/streams/$(streamId)
             ).data.streamerUid == request.auth.uid
-            || isAdmin()
+
+            ||
+
+            isAdmin()
           )
-          && request.resource.data.pinnedMessageId is string
-          && request.resource.data.pinnedMessageId.size() > 0
-          && request.resource.data.pinnedMessageId.size() <= 128
+
+          && request.resource.data.pinnedMessageId
+              is string
+
+          && request.resource.data.pinnedMessageId.size()
+              > 0
+
+          && request.resource.data.pinnedMessageId.size()
+              <= 128
+
           && exists(
             /databases/$(database)/documents/streams/$(streamId)/chat/$(request.resource.data.pinnedMessageId)
           )
-          && request.resource.data.updatedBy == request.auth.uid
-          && request.resource.data.updatedAt == request.time
+
+          && request.resource.data.updatedBy
+              == request.auth.uid
+
+          && request.resource.data.updatedAt
+              == request.time
+
           && request.resource.data.keys().hasOnly([
             "pinnedMessageId",
             "updatedBy",
@@ -1085,12 +1618,17 @@ service cloud.firestore {
 
         allow delete:
           if docId == "main"
+
           && loggedIn()
+
           && (
             get(
               /databases/$(database)/documents/streams/$(streamId)
             ).data.streamerUid == request.auth.uid
-            || isAdmin()
+
+            ||
+
+            isAdmin()
           );
       }
     }
@@ -1098,15 +1636,6 @@ service cloud.firestore {
 
     // ==================================================
     // ZY COINS - CARTEIRAS
-    // ==================================================
-    //
-    // Cada conta pode ativar uma única carteira com
-    // 500 Zy Coins de bônus.
-    //
-    // O usuário NÃO pode simplesmente aumentar seu
-    // próprio saldo pelo navegador.
-    //
-    // Os apoios são validados junto da transação.
     // ==================================================
 
     match /wallets/{uid} {
@@ -1151,8 +1680,6 @@ service cloud.firestore {
 
         ||
 
-        // Permite criar carteira do streamer ao
-        // receber seu primeiro apoio.
         validRecipientWalletCreate(uid)
 
         ||
@@ -1174,19 +1701,26 @@ service cloud.firestore {
       // EXCLUIR CARTEIRA
       // ================================================
 
+      // O titular só pode apagar a carteira junto com
+      // users/{uid}. Isso impede apagar e recriar a
+      // carteira para receber 500 Zy Coins novamente.
       allow delete:
-        if isAdmin();
+        if isAdmin()
+
+        ||
+
+        (
+          isOwner(uid)
+
+          && !existsAfter(
+            /databases/$(database)/documents/users/$(uid)
+          )
+        );
     }
 
 
     // ==================================================
-    // ZY COINS - APOIOS EM LIVE
-    // ==================================================
-    //
-    // Documento criado junto do débito do espectador
-    // e crédito do streamer.
-    //
-    // Usuários não podem alterar ou excluir depois.
+    // ZY COINS - APOIOS
     // ==================================================
 
     match /zyCoinTransactions/{transactionId} {
@@ -1221,17 +1755,7 @@ service cloud.firestore {
 
 
     // ==================================================
-    // ZY COINS - PEDIDOS DE COMPRA
-    // ==================================================
-    //
-    // Usuário comum:
-    // pode criar apenas pedido PENDING.
-    //
-    // O navegador NÃO pode dizer sozinho que uma
-    // compra com dinheiro real foi aprovada.
-    //
-    // Admin pode usar o modo de demonstração
-    // durante o TCC.
+    // ZY COINS - PEDIDOS
     // ==================================================
 
     match /zyCoinOrders/{orderId} {
@@ -1249,12 +1773,12 @@ service cloud.firestore {
         );
 
 
-      // ================================================
-      // CRIAR PEDIDO
-      // ================================================
-
       allow create:
         if loggedIn()
+
+        && !isBanned(
+          request.auth.uid
+        )
 
         && request.resource.data.uid
             == request.auth.uid
@@ -1303,8 +1827,6 @@ service cloud.firestore {
         ])
 
         && (
-
-          // Usuário comum
           (
             request.resource.data.status
                 == "pending"
@@ -1318,7 +1840,6 @@ service cloud.firestore {
 
           ||
 
-          // Demonstração pelo administrador
           (
             isAdmin()
 
@@ -1333,10 +1854,6 @@ service cloud.firestore {
           )
         );
 
-
-      // ================================================
-      // ATUALIZAR PEDIDO
-      // ================================================
 
       allow update:
         if isAdmin()
@@ -1406,12 +1923,222 @@ service cloud.firestore {
             ]);
 
 
-      // ================================================
-      // EXCLUIR PEDIDO
-      // ================================================
-
       allow delete:
         if isAdmin();
+    }
+
+
+    // ==================================================
+    // MODERAÇÃO GLOBAL
+    // ==================================================
+
+    // Um documento representa o estado atual da
+    // penalidade de cada usuário.
+    //
+    // warning = advertência
+    // mute    = não pode enviar mensagens
+    // ban     = bloqueia principais interações
+    //
+    match /moderationPenalties/{uid} {
+
+      allow get:
+        if isOwner(uid)
+        || isAdmin();
+
+      allow list:
+        if isAdmin();
+
+
+      allow create:
+        if isAdmin()
+
+        && request.resource.data.uid
+            == uid
+
+        && request.resource.data.type
+            in [
+              "warning",
+              "mute",
+              "ban"
+            ]
+
+        && request.resource.data.reason
+            is string
+
+        && request.resource.data.reason.size()
+            >= 1
+
+        && request.resource.data.reason.size()
+            <= 500
+
+        && request.resource.data.active
+            == true
+
+        && (
+          request.resource.data.expiresAt
+              == null
+
+          ||
+
+          request.resource.data.expiresAt
+              is timestamp
+        )
+
+        && request.resource.data.createdBy
+            == request.auth.uid
+
+        && request.resource.data.createdAt
+            == request.time
+
+        && request.resource.data.updatedAt
+            == request.time
+
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "type",
+          "reason",
+          "active",
+          "expiresAt",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ]);
+
+
+      allow update:
+        if isAdmin()
+
+        && request.resource.data.uid
+            == resource.data.uid
+
+        && request.resource.data.createdBy
+            == resource.data.createdBy
+
+        && request.resource.data.createdAt
+            == resource.data.createdAt
+
+        && request.resource.data.type
+            in [
+              "warning",
+              "mute",
+              "ban"
+            ]
+
+        && request.resource.data.reason
+            is string
+
+        && request.resource.data.reason.size()
+            >= 1
+
+        && request.resource.data.reason.size()
+            <= 500
+
+        && request.resource.data.active
+            is bool
+
+        && (
+          request.resource.data.expiresAt
+              == null
+
+          ||
+
+          request.resource.data.expiresAt
+              is timestamp
+        )
+
+        && request.resource.data.updatedAt
+            == request.time
+
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "type",
+              "reason",
+              "active",
+              "expiresAt",
+              "updatedAt"
+            ]);
+
+
+      // Histórico não deve sumir silenciosamente.
+      // Para encerrar: active = false.
+      allow delete:
+        if false;
+    }
+
+
+    // Histórico imutável das ações administrativas.
+    match /moderationActions/{actionId} {
+
+      allow read:
+        if isAdmin();
+
+
+      allow create:
+        if isAdmin()
+
+        && request.resource.data.targetUid
+            is string
+
+        && request.resource.data.targetUid.size()
+            >= 1
+
+        && request.resource.data.targetUid.size()
+            <= 128
+
+        && request.resource.data.action
+            in [
+              "apply",
+              "revoke"
+            ]
+
+        && request.resource.data.type
+            in [
+              "none",
+              "warning",
+              "mute",
+              "ban"
+            ]
+
+        && request.resource.data.reason
+            is string
+
+        && request.resource.data.reason.size()
+            >= 1
+
+        && request.resource.data.reason.size()
+            <= 500
+
+        && request.resource.data.moderatorUid
+            == request.auth.uid
+
+        && (
+          request.resource.data.expiresAt
+              == null
+
+          ||
+
+          request.resource.data.expiresAt
+              is timestamp
+        )
+
+        && request.resource.data.createdAt
+            == request.time
+
+        && request.resource.data.keys().hasOnly([
+          "targetUid",
+          "type",
+          "reason",
+          "action",
+          "moderatorUid",
+          "expiresAt",
+          "createdAt"
+        ]);
+
+
+      allow update, delete:
+        if false;
     }
 
 
@@ -1430,11 +2157,7 @@ service cloud.firestore {
 
 
     // ==================================================
-    // STREAMERS ESCOLHIDOS MANUALMENTE
-    // ==================================================
-    //
-    // Não controla mais o TOP 3 da Home.
-    // Mantemos para uso futuro.
+    // STREAMERS DESTACADOS MANUALMENTE
     // ==================================================
 
     match /featuredStreamers/{uid} {
@@ -1448,39 +2171,46 @@ service cloud.firestore {
 
 
     // ==================================================
-    // BLOQUEIO FINAL
+    // PRESENÇA DE ESPECTADORES
     // ==================================================
-
-
-
-    // ==================================================
-    // PRESENÇA DE ESPECTADORES NA ZYTRIX
-    // ==================================================
-    // Presença leve para contabilizar usuários autenticados ativos
-    // em uma live. Documentos sem heartbeat recente deixam de ser
-    // considerados pelo frontend após 90 segundos.
 
     match /streams/{streamId}/viewers/{viewerUid} {
 
       allow read:
         if loggedIn();
 
+
       allow create:
         if isOwner(viewerUid)
-        && request.resource.data.uid == viewerUid
-        && request.resource.data.joinedAt == request.time
-        && request.resource.data.lastSeen == request.time
+
+        && request.resource.data.uid
+            == viewerUid
+
+        && request.resource.data.joinedAt
+            == request.time
+
+        && request.resource.data.lastSeen
+            == request.time
+
         && request.resource.data.keys().hasOnly([
           "uid",
           "joinedAt",
           "lastSeen"
         ]);
 
+
       allow update:
         if isOwner(viewerUid)
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.joinedAt == resource.data.joinedAt
-        && request.resource.data.lastSeen == request.time
+
+        && request.resource.data.uid
+            == resource.data.uid
+
+        && request.resource.data.joinedAt
+            == resource.data.joinedAt
+
+        && request.resource.data.lastSeen
+            == request.time
+
         && request.resource.data
             .diff(resource.data)
             .affectedKeys()
@@ -1488,11 +2218,17 @@ service cloud.firestore {
               "lastSeen"
             ]);
 
+
       allow delete:
         if isOwner(viewerUid)
+
         || isAdmin()
-        || (
+
+        ||
+
+        (
           loggedIn()
+
           && get(
             /databases/$(database)/documents/streams/$(streamId)
           ).data.streamerUid == request.auth.uid
@@ -1500,105 +2236,497 @@ service cloud.firestore {
     }
 
 
-    // Governance v1: disabled until privileged operational activation.
+    // ==================================================
+    // GOVERNANÇA / DENÚNCIAS
+    // ==================================================
+
     function reportsEnabled() {
-      return exists(/databases/$(database)/documents/governance/config)
-        && get(/databases/$(database)/documents/governance/config).data.reportsEnabled == true
-        && get(/databases/$(database)/documents/governance/config).data.rulesVersion == "governance-1";
+      return exists(
+          /databases/$(database)/documents/governance/config
+        )
+
+        && get(
+          /databases/$(database)/documents/governance/config
+        ).data.reportsEnabled == true
+
+        && get(
+          /databases/$(database)/documents/governance/config
+        ).data.rulesVersion == "governance-1";
     }
-    function reportIdValid(id) { return id is string && id.matches('^[A-Za-z0-9_-]{1,128}$'); }
+
+    function reportIdValid(id) {
+      return id is string
+        && id.matches(
+          '^[A-Za-z0-9_-]{1,128}$'
+        );
+    }
+
     function validReportTarget(d) {
-      return reportIdValid(d.targetId) && reportIdValid(d.contextId) && (
-        (d.targetType == 'profile' && d.contextId == '-' && d.targetId != request.auth.uid
-          && exists(/databases/$(database)/documents/profiles/$(d.targetId)))
-        || (d.targetType == 'stream' && d.contextId == '-'
-          && exists(/databases/$(database)/documents/streams/$(d.targetId))
-          && get(/databases/$(database)/documents/streams/$(d.targetId)).data.streamerUid != request.auth.uid)
-        || (d.targetType == 'chat'
-          && exists(/databases/$(database)/documents/streams/$(d.contextId))
-          && exists(/databases/$(database)/documents/streams/$(d.contextId)/chat/$(d.targetId))
-          && get(/databases/$(database)/documents/streams/$(d.contextId)/chat/$(d.targetId)).data.uid != request.auth.uid)
-      );
+      return reportIdValid(
+          d.targetId
+        )
+
+        && reportIdValid(
+          d.contextId
+        )
+
+        && (
+          (
+            d.targetType == "profile"
+
+            && d.contextId == "-"
+
+            && d.targetId
+                != request.auth.uid
+
+            && exists(
+              /databases/$(database)/documents/profiles/$(d.targetId)
+            )
+          )
+
+          ||
+
+          (
+            d.targetType == "stream"
+
+            && d.contextId == "-"
+
+            && exists(
+              /databases/$(database)/documents/streams/$(d.targetId)
+            )
+
+            && get(
+              /databases/$(database)/documents/streams/$(d.targetId)
+            ).data.streamerUid
+                != request.auth.uid
+          )
+
+          ||
+
+          (
+            d.targetType == "chat"
+
+            && exists(
+              /databases/$(database)/documents/streams/$(d.contextId)
+            )
+
+            && exists(
+              /databases/$(database)/documents/streams/$(d.contextId)/chat/$(d.targetId)
+            )
+
+            && get(
+              /databases/$(database)/documents/streams/$(d.contextId)/chat/$(d.targetId)
+            ).data.uid
+                != request.auth.uid
+          )
+        );
     }
-    function reportCreateValid(id,d) {
-      return loggedIn() && request.auth.token.email_verified == true && reportsEnabled()
-        && d.keys().hasOnly(['reporterUid','targetType','targetId','contextId','reason','description','key','status','createdAt'])
-        && d.reporterUid == request.auth.uid && d.status == 'open' && d.createdAt == request.time
-        && reportIdValid(id) && validReportTarget(d)
-        && d.reason in ['child_safety','sexual','violence','hate','harassment','privacy','self_harm','fraud','malware','spam','copyright','impersonation','other']
-        && d.description is string && d.description.size() <= 1000
-        && d.key == d.targetType + ':' + d.contextId + ':' + d.targetId
-        && getAfter(/databases/$(database)/documents/reportKeys/$(request.auth.uid)/targets/$(d.key)).data.reportId == id
-        && getAfter(/databases/$(database)/documents/reportKeys/$(request.auth.uid)/targets/$(d.key)).data.updatedAt == request.time
-        && getAfter(/databases/$(database)/documents/reportLimits/$(request.auth.uid)).data.reportId == id
-        && getAfter(/databases/$(database)/documents/reportLimits/$(request.auth.uid)).data.lastAt == request.time;
+
+    function reportCreateValid(id, d) {
+      return loggedIn()
+
+        && request.auth.token.email_verified
+            == true
+
+        && reportsEnabled()
+
+        && d.keys().hasOnly([
+          "reporterUid",
+          "targetType",
+          "targetId",
+          "contextId",
+          "reason",
+          "description",
+          "key",
+          "status",
+          "createdAt"
+        ])
+
+        && d.reporterUid
+            == request.auth.uid
+
+        && d.status
+            == "open"
+
+        && d.createdAt
+            == request.time
+
+        && reportIdValid(id)
+
+        && validReportTarget(d)
+
+        && d.reason in [
+          "child_safety",
+          "sexual",
+          "violence",
+          "hate",
+          "harassment",
+          "privacy",
+          "self_harm",
+          "fraud",
+          "malware",
+          "spam",
+          "copyright",
+          "impersonation",
+          "other"
+        ]
+
+        && d.description
+            is string
+
+        && d.description.size()
+            <= 1000
+
+        && d.key
+            == d.targetType
+               + ":"
+               + d.contextId
+               + ":"
+               + d.targetId
+
+        && getAfter(
+          /databases/$(database)/documents/reportKeys/$(request.auth.uid)/targets/$(d.key)
+        ).data.reportId
+            == id
+
+        && getAfter(
+          /databases/$(database)/documents/reportKeys/$(request.auth.uid)/targets/$(d.key)
+        ).data.updatedAt
+            == request.time
+
+        && getAfter(
+          /databases/$(database)/documents/reportLimits/$(request.auth.uid)
+        ).data.reportId
+            == id
+
+        && getAfter(
+          /databases/$(database)/documents/reportLimits/$(request.auth.uid)
+        ).data.lastAt
+            == request.time;
     }
-    function newOwnReport(id,uid) {
-      let d = getAfter(/databases/$(database)/documents/reports/$(id)).data;
-      return !exists(/databases/$(database)/documents/reports/$(id))
-        && d.reporterUid == uid && d.createdAt == request.time && d.status == 'open';
+
+    function newOwnReport(id, uid) {
+      let d = getAfter(
+        /databases/$(database)/documents/reports/$(id)
+      ).data;
+
+      return !exists(
+          /databases/$(database)/documents/reports/$(id)
+        )
+
+        && d.reporterUid
+            == uid
+
+        && d.createdAt
+            == request.time
+
+        && d.status
+            == "open";
     }
+
+
     match /governance/config {
-      allow get: if true;
-      allow list, write: if false;
+
+      allow get:
+        if true;
+
+      allow list, write:
+        if false;
     }
+
+
     match /reports/{id} {
-      allow get: if loggedIn() && (isAdmin() || resource.data.reporterUid == request.auth.uid);
-      allow list: if loggedIn() && request.query.limit <= 50 && (isAdmin() || resource.data.reporterUid == request.auth.uid);
-      allow create: if reportCreateValid(id,request.resource.data);
-      allow update: if isAdmin() && resource.data.status == 'open' && request.resource.data.status == 'closed'
-        && request.resource.data.resolution in ['no_violation','insufficient','target_unavailable','reviewed']
-        && request.resource.data.reviewedAt == request.time
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','resolution','reviewedAt'])
-        && !exists(/databases/$(database)/documents/moderationAudit/$(id))
-        && getAfter(/databases/$(database)/documents/moderationAudit/$(id)).data.resolution == request.resource.data.resolution
-        && getAfter(/databases/$(database)/documents/moderationAudit/$(id)).data.moderatorUid == request.auth.uid
-        && getAfter(/databases/$(database)/documents/moderationAudit/$(id)).data.createdAt == request.time;
-      allow delete: if false;
+
+      allow get:
+        if loggedIn()
+
+        && (
+          isAdmin()
+
+          ||
+
+          resource.data.reporterUid
+              == request.auth.uid
+        );
+
+
+      allow list:
+        if loggedIn()
+
+        && request.query.limit
+            <= 50
+
+        && (
+          isAdmin()
+
+          ||
+
+          resource.data.reporterUid
+              == request.auth.uid
+        );
+
+
+      allow create:
+        if reportCreateValid(
+          id,
+          request.resource.data
+        );
+
+
+      allow update:
+        if isAdmin()
+
+        && resource.data.status
+            == "open"
+
+        && request.resource.data.status
+            == "closed"
+
+        && request.resource.data.resolution
+            in [
+              "no_violation",
+              "insufficient",
+              "target_unavailable",
+              "reviewed"
+            ]
+
+        && request.resource.data.reviewedAt
+            == request.time
+
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "status",
+              "resolution",
+              "reviewedAt"
+            ])
+
+        && !exists(
+          /databases/$(database)/documents/moderationAudit/$(id)
+        )
+
+        && getAfter(
+          /databases/$(database)/documents/moderationAudit/$(id)
+        ).data.resolution
+            == request.resource.data.resolution
+
+        && getAfter(
+          /databases/$(database)/documents/moderationAudit/$(id)
+        ).data.moderatorUid
+            == request.auth.uid
+
+        && getAfter(
+          /databases/$(database)/documents/moderationAudit/$(id)
+        ).data.createdAt
+            == request.time;
+
+
+      allow delete:
+        if false;
     }
+
+
     match /reportLimits/{uid} {
-      allow get: if isOwner(uid);
-      allow list, delete: if false;
-      allow create, update: if isOwner(uid)
-        && request.resource.data.keys().hasOnly(['reportId','lastAt']) && request.resource.data.lastAt == request.time
-        && (!exists(/databases/$(database)/documents/reportLimits/$(uid)) || resource.data.lastAt + duration.value(60,'s') <= request.time)
-        && newOwnReport(request.resource.data.reportId,uid);
+
+      allow get:
+        if isOwner(uid);
+
+      allow list, delete:
+        if false;
+
+
+      allow create, update:
+        if isOwner(uid)
+
+        && request.resource.data.keys().hasOnly([
+          "reportId",
+          "lastAt"
+        ])
+
+        && request.resource.data.lastAt
+            == request.time
+
+        && (
+          !exists(
+            /databases/$(database)/documents/reportLimits/$(uid)
+          )
+
+          ||
+
+          resource.data.lastAt
+              + duration.value(60, "s")
+              <= request.time
+        )
+
+        && newOwnReport(
+          request.resource.data.reportId,
+          uid
+        );
     }
+
+
     match /reportKeys/{uid}/targets/{key} {
-      allow get: if isOwner(uid);
-      allow list, delete: if false;
-      allow create, update: if isOwner(uid)
-        && request.resource.data.keys().hasOnly(['reportId','updatedAt']) && request.resource.data.updatedAt == request.time
-        && newOwnReport(request.resource.data.reportId,uid)
-        && getAfter(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.key == key
-        && (!exists(/databases/$(database)/documents/reportKeys/$(uid)/targets/$(key))
-          || get(/databases/$(database)/documents/reports/$(resource.data.reportId)).data.status == 'closed');
+
+      allow get:
+        if isOwner(uid);
+
+      allow list, delete:
+        if false;
+
+
+      allow create, update:
+        if isOwner(uid)
+
+        && request.resource.data.keys().hasOnly([
+          "reportId",
+          "updatedAt"
+        ])
+
+        && request.resource.data.updatedAt
+            == request.time
+
+        && newOwnReport(
+          request.resource.data.reportId,
+          uid
+        )
+
+        && getAfter(
+          /databases/$(database)/documents/reports/$(request.resource.data.reportId)
+        ).data.key
+            == key
+
+        && (
+          !exists(
+            /databases/$(database)/documents/reportKeys/$(uid)/targets/$(key)
+          )
+
+          ||
+
+          get(
+            /databases/$(database)/documents/reports/$(resource.data.reportId)
+          ).data.status
+              == "closed"
+        );
     }
+
+
     match /moderationAudit/{id} {
-      allow get: if isAdmin();
-      allow list: if isAdmin() && request.query.limit <= 50;
-      allow create: if isAdmin()
-        && request.resource.data.keys().hasOnly(['reportId','action','resolution','moderatorUid','createdAt'])
-        && request.resource.data.reportId == id && request.resource.data.action == 'close_report'
-        && request.resource.data.moderatorUid == request.auth.uid && request.resource.data.createdAt == request.time
-        && get(/databases/$(database)/documents/reports/$(id)).data.status == 'open'
-        && getAfter(/databases/$(database)/documents/reports/$(id)).data.status == 'closed'
-        && getAfter(/databases/$(database)/documents/reports/$(id)).data.reviewedAt == request.time
-        && getAfter(/databases/$(database)/documents/reports/$(id)).data.resolution == request.resource.data.resolution;
-      allow update, delete: if false;
+
+      allow get:
+        if isAdmin();
+
+      allow list:
+        if isAdmin()
+        && request.query.limit <= 50;
+
+
+      allow create:
+        if isAdmin()
+
+        && request.resource.data.keys().hasOnly([
+          "reportId",
+          "action",
+          "resolution",
+          "moderatorUid",
+          "createdAt"
+        ])
+
+        && request.resource.data.reportId
+            == id
+
+        && request.resource.data.action
+            == "close_report"
+
+        && request.resource.data.moderatorUid
+            == request.auth.uid
+
+        && request.resource.data.createdAt
+            == request.time
+
+        && get(
+          /databases/$(database)/documents/reports/$(id)
+        ).data.status
+            == "open"
+
+        && getAfter(
+          /databases/$(database)/documents/reports/$(id)
+        ).data.status
+            == "closed"
+
+        && getAfter(
+          /databases/$(database)/documents/reports/$(id)
+        ).data.reviewedAt
+            == request.time
+
+        && getAfter(
+          /databases/$(database)/documents/reports/$(id)
+        ).data.resolution
+            == request.resource.data.resolution;
+
+
+      allow update, delete:
+        if false;
     }
+
+
+    // ==================================================
+    // ACEITE DE POLÍTICAS
+    // ==================================================
+
     match /policyAcceptances/{uid}/versions/{version} {
-      allow get: if isOwner(uid) || isAdmin();
-      allow list: if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid)
-        && get(/databases/$(database)/documents/governance/config).data.termsEffective == true
-        && version == get(/databases/$(database)/documents/governance/config).data.termsVersion
-        && request.resource.data.keys().hasOnly(['uid','termsVersion','privacyVersion','acceptedAt'])
-        && request.resource.data.uid == uid && request.resource.data.termsVersion == version
-        && request.resource.data.privacyVersion == get(/databases/$(database)/documents/governance/config).data.privacyVersion
-        && request.resource.data.acceptedAt == request.time;
-      allow update, delete: if false;
+
+      allow get:
+        if isOwner(uid)
+        || isAdmin();
+
+      allow list:
+        if isOwner(uid)
+        || isAdmin();
+
+
+      allow create:
+        if isOwner(uid)
+
+        && get(
+          /databases/$(database)/documents/governance/config
+        ).data.termsEffective == true
+
+        && version
+            == get(
+              /databases/$(database)/documents/governance/config
+            ).data.termsVersion
+
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "termsVersion",
+          "privacyVersion",
+          "acceptedAt"
+        ])
+
+        && request.resource.data.uid
+            == uid
+
+        && request.resource.data.termsVersion
+            == version
+
+        && request.resource.data.privacyVersion
+            == get(
+              /databases/$(database)/documents/governance/config
+            ).data.privacyVersion
+
+        && request.resource.data.acceptedAt
+            == request.time;
+
+
+      allow update, delete:
+        if false;
     }
+
+
+    // ==================================================
+    // BLOQUEIO FINAL
+    // ==================================================
 
     match /{document=**} {
 

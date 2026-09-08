@@ -63,7 +63,7 @@ jobs:
           set -e
           cmp -s firestore.rules firebase/firestore.rules
           cmp -s firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
-          grep -q "PRESENÇA DE ESPECTADORES NA ZYTRIX" firestore.rules
+          grep -Fq 'match /streams/{streamId}/viewers/{viewerUid}' firestore.rules
           grep -q "global-features.js" index.html
           grep -q "live-social.js" live.html
           grep -q "profile-social.js" perfil.html

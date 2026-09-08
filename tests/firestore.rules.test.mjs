@@ -2,7 +2,7 @@ import {test,before,after,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
-import {doc,setDoc,getDoc,getDocs,collection,query,where,limit,writeBatch,serverTimestamp,Timestamp,updateDoc,deleteDoc} from 'firebase/firestore';
+import {doc,setDoc,getDoc,getDocs,collection,query,where,limit,writeBatch,serverTimestamp,Timestamp,updateDoc,deleteDoc,runTransaction,increment} from 'firebase/firestore';
 let env;
 const uid='alice';
 const as=(id,verified=true)=>env.authenticatedContext(id,{email_verified:verified}).firestore();
@@ -29,3 +29,49 @@ test('DENY recebimento desativado',async()=>{await env.withSecurityRulesDisabled
 test('ALLOW aceite versionado; DENY falsificação, alteração e versão diferente',async()=>{const db=as(uid),ref=doc(db,'policyAcceptances',uid,'versions','1.0'),d={uid,termsVersion:'1.0',privacyVersion:'1.0',acceptedAt:serverTimestamp()};await assertSucceeds(setDoc(ref,d));await assertFails(setDoc(ref,d));await assertFails(setDoc(doc(db,'policyAcceptances','bob','versions','1.0'),{...d,uid:'bob'}));await assertFails(setDoc(doc(db,'policyAcceptances',uid,'versions','9.0'),{...d,termsVersion:'9.0'}));});
 test('DENY aceite de minuta ou timestamp do cliente',async()=>{await assertFails(setDoc(doc(as(uid),'policyAcceptances',uid,'versions','1.0'),{uid,termsVersion:'1.0',privacyVersion:'1.0',acceptedAt:Timestamp.fromMillis(1)}));await env.withSecurityRulesDisabled(c=>updateDoc(doc(c.firestore(),'governance','config'),{termsEffective:false}));await assertFails(setDoc(doc(as(uid),'policyAcceptances',uid,'versions','1.0'),{uid,termsVersion:'1.0',privacyVersion:'1.0',acceptedAt:serverTimestamp()}));});
 test('DENY corridas concorrentes: apenas um envio sobrevive',async()=>{const results=await Promise.allSettled([report(as(uid),'race1'),report(as(uid),'race2')]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);});
+
+
+test('ALLOW alerta público somente quando acompanha apoio atômico válido',async()=>{
+  const old=Timestamp.fromMillis(1);
+  await env.withSecurityRulesDisabled(async c=>{
+    const db=c.firestore();
+    await setDoc(doc(db,'streams','live1'),{streamerUid:'bob',channelId:'bob',title:'Live',description:'',categoryId:'Games',thumbnailURL:'',status:'live',playbackURL:'https://www.twitch.tv/example',startedAt:old,endedAt:null,createdAt:old,viewerCount:0});
+    await setDoc(doc(db,'wallets','alice'),{uid:'alice',balance:500,totalSent:0,totalReceived:0,lastTransactionId:'seed-a',createdAt:old,updatedAt:old});
+    await setDoc(doc(db,'wallets','bob'),{uid:'bob',balance:500,totalSent:0,totalReceived:0,lastTransactionId:'seed-b',createdAt:old,updatedAt:old});
+  });
+  const db=as('alice');
+  const senderRef=doc(db,'wallets','alice');
+  const recipientRef=doc(db,'wallets','bob');
+  const txRef=doc(db,'zyCoinTransactions','support1');
+  const alertRef=doc(db,'streams','live1','supportAlerts','support1');
+  await assertSucceeds(runTransaction(db,async tx=>{
+    const sender=await tx.get(senderRef);
+    tx.update(senderRef,{balance:450,totalSent:50,totalReceived:0,lastTransactionId:'support1',updatedAt:serverTimestamp()});
+    tx.update(recipientRef,{balance:increment(50),totalReceived:increment(50),lastTransactionId:'support1',updatedAt:serverTimestamp()});
+    tx.set(txRef,{transactionId:'support1',fromUid:'alice',toUid:'bob',streamId:'live1',amount:50,type:'stream_support',status:'completed',createdAt:serverTimestamp()});
+    tx.set(alertRef,{transactionId:'support1',fromUid:'alice',streamId:'live1',amount:50,createdAt:serverTimestamp()});
+  }));
+  await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(),'streams','live1','supportAlerts','support1')));
+  await assertFails(setDoc(doc(as('carol'),'streams','live1','supportAlerts','fake'),{transactionId:'fake',fromUid:'carol',streamId:'live1',amount:50,createdAt:serverTimestamp()}));
+  await assertFails(updateDoc(alertRef,{amount:500}));
+  await assertFails(deleteDoc(alertRef));
+});
+
+test('ALLOW streamer configurar som e 18+; DENY som fora da lista',async()=>{
+  const old=Timestamp.fromMillis(1);
+  await env.withSecurityRulesDisabled(c=>setDoc(doc(c.firestore(),'streams','live1'),{streamerUid:'bob',channelId:'bob',title:'Live',description:'',categoryId:'Games',thumbnailURL:'',status:'offline',playbackURL:'https://www.twitch.tv/example',startedAt:null,endedAt:null,createdAt:old,viewerCount:0}));
+  const ref=doc(as('bob'),'streams','live1');
+  await assertSucceeds(updateDoc(ref,{supportAlertSound:'bell',matureContent:true}));
+  await assertFails(updateDoc(ref,{supportAlertSound:'remote-url'}));
+  await assertFails(updateDoc(ref,{matureContent:'yes'}));
+});
+
+
+test('ALLOW apoio cria carteira ausente sem ler saldo do destinatário',async()=>{
+  const old=Timestamp.fromMillis(1);
+  await env.withSecurityRulesDisabled(async c=>{const db=c.firestore();await setDoc(doc(db,'streams','live1'),{streamerUid:'bob',channelId:'bob',title:'Live',description:'',categoryId:'Games',thumbnailURL:'',status:'live',playbackURL:'https://www.twitch.tv/example',startedAt:old,endedAt:null,createdAt:old,viewerCount:0});await setDoc(doc(db,'wallets','alice'),{uid:'alice',balance:500,totalSent:0,totalReceived:0,lastTransactionId:'seed-a',createdAt:old,updatedAt:old});});
+  const db=as('alice'),senderRef=doc(db,'wallets','alice'),recipientRef=doc(db,'wallets','bob'),txRef=doc(db,'zyCoinTransactions','support-new-wallet'),alertRef=doc(db,'streams','live1','supportAlerts','support-new-wallet');
+  await assertFails(getDoc(recipientRef));
+  await assertSucceeds(runTransaction(db,async tx=>{await tx.get(senderRef);tx.update(senderRef,{balance:475,totalSent:25,totalReceived:0,lastTransactionId:'support-new-wallet',updatedAt:serverTimestamp()});tx.set(recipientRef,{uid:'bob',balance:525,totalSent:0,totalReceived:25,lastTransactionId:'support-new-wallet',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});tx.set(txRef,{transactionId:'support-new-wallet',fromUid:'alice',toUid:'bob',streamId:'live1',amount:25,type:'stream_support',status:'completed',createdAt:serverTimestamp()});tx.set(alertRef,{transactionId:'support-new-wallet',fromUid:'alice',streamId:'live1',amount:25,createdAt:serverTimestamp()});}));
+  await env.withSecurityRulesDisabled(async c=>{const snap=await getDoc(doc(c.firestore(),'wallets','bob'));assert.equal(snap.data().balance,525);assert.equal(snap.data().totalReceived,25);});
+});

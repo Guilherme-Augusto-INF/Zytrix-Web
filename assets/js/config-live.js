@@ -1,6 +1,7 @@
-import { auth, db, onAuthStateChanged, doc, getDoc, getDocs, query, collection, where, limit, updateDoc, serverTimestamp, writeBatch } from './firebase.js';
+import { auth, db, onAuthStateChanged, doc, getDoc, getDocs, query, collection, where, limit, updateDoc, serverTimestamp, writeBatch, ensureWallet } from './firebase.js';
 import { header, footer, categories, escapeAttr, escapeHtml } from './ui.js';
 import { parseStreamingSource, streamingPlatformLabel } from './streaming.js';
+import { SUPPORT_ALERT_SOUNDS, normalizeSupportAlertSound, playSupportAlertSound, unlockSupportAlertAudio } from './support-alert-sound.js';
 header();
 footer();
 const root = document.querySelector('#config-root');
@@ -14,6 +15,7 @@ async function load() {
         return;
     }
     channel = channelSnap.data();
+    await ensureWallet(user.uid);
     let streamId = channel.currentStreamId || '';
     if (!streamId) {
         const result = await getDocs(query(collection(db, 'streams'), where('streamerUid', '==', user.uid), limit(1)));
@@ -126,6 +128,28 @@ function render() {
               <strong>${currentSource ? streamingPlatformLabel(currentSource.platform) : 'Não identificada'}</strong>
             </p>
           </div>
+
+          <div class="panel card stream-alert-settings">
+            <div class="eyebrow">Alertas de apoio</div>
+            <strong>Som dos Zy Coins</strong>
+            <p class="muted">Escolha o som que os espectadores ouvirão quando alguém apoiar esta live.</p>
+            <div class="stream-alert-sound-row">
+              <select id="support-alert-sound" class="input">
+                ${Object.entries(SUPPORT_ALERT_SOUNDS)
+                  .map(([value, label]) => `<option value="${value}" ${normalizeSupportAlertSound(stream.supportAlertSound || 'coin') === value ? 'selected' : ''}>${escapeHtml(label)}</option>`)
+                  .join('')}
+              </select>
+              <button id="preview-support-sound" type="button" class="btn">▶ Testar</button>
+            </div>
+
+            <label class="mature-setting" for="mature-content">
+              <input id="mature-content" type="checkbox" ${stream.matureContent === true ? 'checked' : ''}>
+              <span>
+                <strong>Conteúdo 18+</strong>
+                <small>Mostra uma confirmação na Zytrix e mantém as exigências de login/idade da Twitch ou Kick.</small>
+              </span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -142,6 +166,8 @@ function render() {
     const categorySelect = document.querySelector('#category');
     const subcategorySelect = document.querySelector('#subcategory');
     const playbackInput = document.querySelector('#playback-url');
+    const soundSelect = document.querySelector('#support-alert-sound');
+    const previewSoundButton = document.querySelector('#preview-support-sound');
     function refreshSubcategories() {
         const options = categories[categorySelect.value] || [];
         subcategorySelect.innerHTML = `
@@ -175,6 +201,21 @@ function render() {
     refreshStreamingHint();
     categorySelect.onchange = refreshSubcategories;
     playbackInput.addEventListener('input', refreshStreamingHint);
+    previewSoundButton?.addEventListener('click', async () => {
+        const message = document.querySelector('#config-msg');
+        const sound = normalizeSupportAlertSound(soundSelect?.value || 'coin');
+        if (sound === 'none') {
+            if (message) message.innerHTML = '<div class="message ok">Som de apoio desativado.</div>';
+            return;
+        }
+        const unlocked = await unlockSupportAlertAudio();
+        const played = unlocked && playSupportAlertSound(sound);
+        if (message) {
+            message.innerHTML = played
+                ? '<div class="message ok">Prévia do som reproduzida.</div>'
+                : '<div class="message err">O navegador bloqueou o áudio. Clique novamente após interagir com a página.</div>';
+        }
+    });
     document.querySelector('#save').onclick = save;
     document.querySelector('#toggle-live').onclick = toggle;
 }
@@ -185,6 +226,8 @@ function collectForm({ requireSubcategory = false } = {}) {
     const category = document.querySelector('#category').value;
     const subcategory = document.querySelector('#subcategory').value;
     const source = parseStreamingSource(document.querySelector('#playback-url').value);
+    const supportAlertSound = normalizeSupportAlertSound(document.querySelector('#support-alert-sound')?.value || 'coin');
+    const matureContent = document.querySelector('#mature-content')?.checked === true;
     if (!source) {
         return {
             error: 'Informe um link válido da Twitch ou da Kick.'
@@ -202,6 +245,8 @@ function collectForm({ requireSubcategory = false } = {}) {
         category,
         categoryId: subcategory ? `${category} - ${subcategory}` : category,
         playbackURL: source.canonicalUrl,
+        supportAlertSound,
+        matureContent,
         source
     };
 }
@@ -218,7 +263,9 @@ async function save() {
             description: form.description,
             thumbnailURL: form.thumbnailURL,
             categoryId: form.categoryId,
-            playbackURL: form.playbackURL
+            playbackURL: form.playbackURL,
+            supportAlertSound: form.supportAlertSound,
+            matureContent: form.matureContent
         });
         await updateDoc(doc(db, 'channels', user.uid), {
             categoryId: form.categoryId
@@ -252,6 +299,8 @@ async function toggle() {
                 thumbnailURL: form.thumbnailURL,
                 categoryId: form.categoryId,
                 playbackURL: form.playbackURL,
+                supportAlertSound: form.supportAlertSound,
+                matureContent: form.matureContent,
                 status: 'live',
                 startedAt: serverTimestamp(),
                 endedAt: null
@@ -262,6 +311,8 @@ async function toggle() {
                 thumbnailURL: form.thumbnailURL,
                 categoryId: form.categoryId,
                 playbackURL: form.playbackURL,
+                supportAlertSound: form.supportAlertSound,
+                matureContent: form.matureContent,
                 status: 'offline',
                 endedAt: serverTimestamp()
             });
