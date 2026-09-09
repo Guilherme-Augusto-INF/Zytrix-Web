@@ -204,3 +204,18 @@ test('mint promocional pelo cliente está pausado', async () => {
     uid: 'alice', promotionId: 'p1', amount: 25, transactionId: 'x', createdAt: serverTimestamp()
   }));
 });
+
+
+test('YouTube Live é aceito e domínio falso continua bloqueado', async () => {
+  const db = as('bob');
+  await assertSucceeds(setDoc(doc(db, 'streams', 'live1'), {
+    playbackURL: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+  }, { merge: true }));
+
+  const snap = await getDoc(doc(db, 'streams', 'live1'));
+  assert.equal(snap.data().playbackURL, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+
+  await assertFails(setDoc(doc(db, 'streams', 'live1'), {
+    playbackURL: 'https://youtube.com.evil.example/watch?v=dQw4w9WgXcQ'
+  }, { merge: true }));
+});

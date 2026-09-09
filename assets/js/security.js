@@ -3,7 +3,7 @@ const HTTPS = 'https:';
 const HOST_GROUPS = Object.freeze({
   twitch: ['twitch.tv', 'www.twitch.tv', 'm.twitch.tv', 'player.twitch.tv'],
   kick: ['kick.com', 'www.kick.com', 'player.kick.com'],
-  youtube: ['youtube.com', 'www.youtube.com', 'youtu.be'],
+  youtube: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'www.youtu.be'],
   instagram: ['instagram.com', 'www.instagram.com'],
   tiktok: ['tiktok.com', 'www.tiktok.com'],
   profileImages: [
@@ -13,7 +13,10 @@ const HOST_GROUPS = Object.freeze({
     'static-cdn.jtvnw.net',
     'clips-media-assets2.twitch.tv',
     'files.kick.com',
-    'images.kick.com'
+    'images.kick.com',
+    'i.ytimg.com',
+    'img.youtube.com',
+    'yt3.ggpht.com'
   ]
 });
 
@@ -42,7 +45,11 @@ export function safeHttpsUrl(value = '', allowedHosts = []) {
 }
 
 export function safeStreamingUrl(value = '') {
-  return safeHttpsUrl(value, [...HOST_GROUPS.twitch, ...HOST_GROUPS.kick]);
+  return safeHttpsUrl(value, [
+    ...HOST_GROUPS.twitch,
+    ...HOST_GROUPS.kick,
+    ...HOST_GROUPS.youtube
+  ]);
 }
 
 export function safeSocialUrl(kind, value = '') {

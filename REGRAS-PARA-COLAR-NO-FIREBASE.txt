@@ -51,6 +51,8 @@ service cloud.firestore {
         && (
           url.matches('^https://(www\\.|m\\.|player\\.)?twitch\\.tv/.*$')
           || url.matches('^https://(www\\.|player\\.)?kick\\.com/.*$')
+          || url.matches('^https://(www\\.|m\\.)?youtube\\.com/(watch\\?v=[A-Za-z0-9_-]{11}.*|live/[A-Za-z0-9_-]{11}.*|embed/[A-Za-z0-9_-]{11}.*)$')
+          || url.matches('^https://(www\\.)?youtu\\.be/[A-Za-z0-9_-]{11}.*$')
         );
     }
 
@@ -65,6 +67,9 @@ service cloud.firestore {
           || url.matches('^https://static-cdn\\.jtvnw\\.net/.*$')
           || url.matches('^https://clips-media-assets2\\.twitch\\.tv/.*$')
           || url.matches('^https://([A-Za-z0-9-]+\\.)*kick\\.com/.*$')
+          || url.matches('^https://i\\.ytimg\\.com/.*$')
+          || url.matches('^https://img\\.youtube\\.com/.*$')
+          || url.matches('^https://yt3\\.ggpht\\.com/.*$')
         );
     }
 

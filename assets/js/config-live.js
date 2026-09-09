@@ -87,7 +87,7 @@ function render() {
               id="playback-url"
               class="input"
               value="${escapeAttr(stream.playbackURL || '')}"
-              placeholder="https://www.twitch.tv/seucanal ou https://kick.com/seucanal"
+              placeholder="https://youtube.com/watch?v=... | twitch.tv/... | kick.com/..."
               autocomplete="url"
             >
             <small id="stream-platform-hint" class="stream-source-hint"></small>
@@ -146,7 +146,7 @@ function render() {
               <input id="mature-content" type="checkbox" ${stream.matureContent === true ? 'checked' : ''}>
               <span>
                 <strong>Conteúdo 18+</strong>
-                <small>Mostra uma confirmação na Zytrix e mantém as exigências de login/idade da Twitch ou Kick.</small>
+                <small>Mostra uma confirmação na Zytrix e mantém as exigências de login/idade da plataforma de origem.</small>
               </span>
             </label>
           </div>
@@ -185,12 +185,12 @@ function render() {
         const hint = document.querySelector('#stream-platform-hint');
         const source = parseStreamingSource(playbackInput.value);
         if (!playbackInput.value.trim()) {
-            hint.textContent = 'Cole a URL completa de um canal da Twitch ou Kick.';
+            hint.textContent = 'Cole a URL de uma live/vídeo do YouTube ou de um canal da Twitch/Kick.';
             hint.className = 'stream-source-hint';
             return;
         }
         if (!source) {
-            hint.textContent = 'Link inválido. Use twitch.tv/... ou kick.com/...';
+            hint.textContent = 'Link inválido. Use youtube.com/watch?v=..., youtu.be/..., twitch.tv/... ou kick.com/...';
             hint.className = 'stream-source-hint error';
             return;
         }
@@ -230,7 +230,7 @@ function collectForm({ requireSubcategory = false } = {}) {
     const matureContent = document.querySelector('#mature-content')?.checked === true;
     if (!source) {
         return {
-            error: 'Informe um link válido da Twitch ou da Kick.'
+            error: 'Informe um link válido do YouTube, Twitch ou Kick.'
         };
     }
     if (requireSubcategory && !subcategory) {

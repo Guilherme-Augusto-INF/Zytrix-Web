@@ -180,7 +180,7 @@ function render() {
                 allowfullscreen
                 referrerpolicy="strict-origin-when-cross-origin"
               ></iframe>`
-        : '<div class="state">Player indisponível. Vincule um canal válido da Twitch ou Kick.</div>'}
+        : '<div class="state">Player indisponível. Vincule uma live válida do YouTube, Twitch ou Kick.</div>'}
         </div>
 
         <div class="panel card" style="margin-top:14px">

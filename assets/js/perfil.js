@@ -189,7 +189,7 @@ function render() {
           </div>
 
           <p class="muted" style="margin-top:10px">
-            Você pode trocar entre Twitch e Kick no painel de configuração da live.
+            Você pode trocar entre YouTube, Twitch e Kick no painel de configuração da live.
           </p>
 
           <a class="btn btn-primary" href="config-live.html">
@@ -200,15 +200,15 @@ function render() {
           <h2>Você deseja fazer lives?</h2>
 
           <p class="muted">
-            Vincule um canal da Twitch ou da Kick para criar seu canal na Zytrix.
+            Vincule uma live do YouTube ou um canal da Twitch/Kick para criar seu canal na Zytrix.
           </p>
 
           <div class="form-group">
-            <label for="stream-url">Link da Twitch ou Kick</label>
+            <label for="stream-url">Link do YouTube, Twitch ou Kick</label>
             <input
               id="stream-url"
               class="input"
-              placeholder="https://www.twitch.tv/seucanal ou https://kick.com/seucanal"
+              placeholder="https://youtube.com/watch?v=... | twitch.tv/... | kick.com/..."
               autocomplete="url"
             >
             <small class="muted">
@@ -277,7 +277,7 @@ async function createStreamer() {
     if (!source) {
         message.innerHTML = `
       <div class="message err">
-        Use um link válido da Twitch ou da Kick.
+        Use um link válido do YouTube, Twitch ou Kick.
       </div>
     `;
         return;
