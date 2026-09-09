@@ -34,10 +34,12 @@ function waitForLiveContent() {
   if (!root) return;
 
   const tryMount = () => {
-    if (!stream || root.querySelector('#live-social-panel')) return;
+    if (!stream) return;
     const loadingOnly = root.children.length === 1 && root.querySelector('.state');
     if (loadingOnly) return;
-    renderPanel();
+
+    if (!root.querySelector('#live-social-panel')) renderPanel();
+    else syncPrimaryViewerCount();
   };
 
   tryMount();
@@ -48,6 +50,17 @@ function waitForLiveContent() {
 function viewerLabel() {
   if (!currentUser) return 'Login necessário';
   return currentUser?.uid === stream?.streamerUid ? Number(activeViewers || 0).toLocaleString('pt-BR') : 'Privado';
+}
+
+function syncPrimaryViewerCount() {
+  if (currentUser?.uid !== stream?.streamerUid || activeViewers === null) return;
+
+  const element = document.querySelector('.viewer-panel strong');
+  if (!element) return;
+
+  const count = Math.max(0, Number(activeViewers) || 0);
+  element.textContent = `👁 ${count.toLocaleString('pt-BR')}`;
+  element.dataset.viewerSource = 'zytrix-presence';
 }
 
 function renderPanel() {
@@ -90,21 +103,23 @@ function renderPanel() {
         <strong id="live-follower-count">${currentUser?.uid === stream.streamerUid ? followerCount.toLocaleString('pt-BR') : 'Privado'}</strong>
       </div>
       <div class="stat-box">
-        <span class="stat-label">Na Zytrix agora</span>
+        <span class="stat-label">Espectadores ativos</span>
         <strong id="zytrix-active-viewers">${viewerLabel()}</strong>
       </div>
       <div class="stat-box">
-        <span class="stat-label">Contador da transmissão</span>
-        <strong>${Number(stream.viewerCount || 0).toLocaleString('pt-BR')}</strong>
+        <span class="stat-label">Fonte da contagem</span>
+        <strong>${ownChannel ? 'Presença Zytrix' : 'Protegida'}</strong>
       </div>
     </div>
 
     <p class="dashboard-note">
-      O contador “Na Zytrix agora” considera usuários autenticados ativos nesta página nos últimos 90 segundos.
-      O contador da transmissão continua sendo o valor registrado na live.
+      O contador considera usuários autenticados com presença ativa nesta live nos últimos 90 segundos.
+      A presença é renovada automaticamente a cada 30 segundos e deixa de contar quando expira.
     </p>
     <div id="follow-message"></div>
   `;
+
+  syncPrimaryViewerCount();
 
   const button = panel.querySelector('#follow-streamer');
   if (!button || ownChannel) return;
@@ -162,13 +177,22 @@ async function startPresenceForUser() {
 
   try {
     stopPresence = await startViewerPresence(currentUser.uid, streamId);
-    if (currentUser.uid !== stream?.streamerUid) { activeViewers = null; renderPanel(); return; }
+
+    if (currentUser.uid !== stream?.streamerUid) {
+      activeViewers = null;
+      renderPanel();
+      return;
+    }
+
     stopViewers = watchActiveViewers(
       streamId,
       count => {
         activeViewers = count;
+
         const element = document.querySelector('#zytrix-active-viewers');
         if (element) element.textContent = count.toLocaleString('pt-BR');
+
+        syncPrimaryViewerCount();
       },
       error => console.warn('Não foi possível acompanhar espectadores ativos.', error)
     );
@@ -201,6 +225,7 @@ async function initialize() {
     if (!streamSnap.exists()) return;
     stream = { id: streamSnap.id, ...streamSnap.data() };
     renderPanel();
+    syncPrimaryViewerCount();
   });
 
   waitForLiveContent();
