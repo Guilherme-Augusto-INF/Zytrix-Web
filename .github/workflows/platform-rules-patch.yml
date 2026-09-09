@@ -1,0 +1,38 @@
+name: Platform rules patch
+
+on:
+  push:
+    branches: [zytrix-platform-expansion-prod]
+    paths:
+      - scripts/patch-platform-rules.py
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: zytrix-platform-expansion-prod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply Firestore platform rules patch
+        run: python scripts/patch-platform-rules.py
+      - name: Keep rule copies identical
+        run: |
+          cmp -s firestore.rules firebase/firestore.rules
+          cmp -s firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+      - name: Commit rules
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add firestore.rules firebase/firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "feat: secure platform expansion Firestore rules"
+          git push origin HEAD:zytrix-platform-expansion-prod
