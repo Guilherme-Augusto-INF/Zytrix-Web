@@ -15,11 +15,14 @@ test('bloqueia protocolos executáveis e HTTP', () => {
   assert.equal(safeHttpsUrl('https://example.com/path'), 'https://example.com/path');
 });
 
-test('streaming aceita somente Twitch/Kick HTTPS', () => {
+test('streaming aceita somente Twitch/Kick/YouTube em HTTPS', () => {
   assert.equal(safeStreamingUrl('https://www.twitch.tv/example'), 'https://www.twitch.tv/example');
   assert.equal(safeStreamingUrl('https://kick.com/example'), 'https://kick.com/example');
+  assert.equal(safeStreamingUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  assert.equal(safeStreamingUrl('https://youtu.be/dQw4w9WgXcQ'), 'https://youtu.be/dQw4w9WgXcQ');
   assert.equal(safeStreamingUrl('https://evil.example/twitch.tv/example'), '');
   assert.equal(safeStreamingUrl('https://twitch.tv.evil.example/example'), '');
+  assert.equal(safeStreamingUrl('https://youtube.com.evil.example/watch?v=dQw4w9WgXcQ'), '');
 });
 
 test('redes sociais respeitam allowlist de host', () => {
@@ -32,6 +35,7 @@ test('redes sociais respeitam allowlist de host', () => {
 test('imagens ficam limitadas a CDNs conhecidas', () => {
   assert.ok(safeImageUrl('https://lh3.googleusercontent.com/a/example'));
   assert.ok(safeImageUrl('https://static-cdn.jtvnw.net/previews/example.jpg'));
+  assert.ok(safeImageUrl('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg'));
   assert.equal(safeImageUrl('https://tracker.example/pixel.png'), '');
 });
 
