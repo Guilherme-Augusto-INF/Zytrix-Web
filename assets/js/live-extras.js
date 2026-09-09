@@ -17,9 +17,11 @@ import {
   serverTimestamp,
   runTransaction,
   increment,
+  Timestamp,
   ensureWallet
 } from './firebase.js';
 import { escapeHtml, escapeAttr } from './ui.js';
+import { safeStreamingUrl, safeImageUrl, safeSocialUrl } from './security.js';
 import {
   getPlatformPreferences,
   recordWatchProgress,
@@ -289,12 +291,12 @@ async function aboutHtml() {
     if (!snap.exists()) return '';
     const data = snap.data();
     const links = [
-      ['Site', data.website],
-      ['YouTube', data.youtube],
-      ['Instagram', data.instagram],
-      ['TikTok', data.tiktok]
+      ['Site', safeSocialUrl('website', data.website)],
+      ['YouTube', safeSocialUrl('youtube', data.youtube)],
+      ['Instagram', safeSocialUrl('instagram', data.instagram)],
+      ['TikTok', safeSocialUrl('tiktok', data.tiktok)]
     ].filter(([, value]) => value);
-    return `<section class="card panel"><div class="eyebrow">SOBRE O CRIADOR</div><p>${escapeHtml(data.about || '')}</p>${data.games ? `<p class="muted">Conteúdos: ${escapeHtml(data.games)}</p>` : ''}<div class="live-interaction-row">${links.map(([label, url]) => `<a class="btn" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`).join('')}</div></section>`;
+    return `<section class="card panel"><div class="eyebrow">SOBRE O CRIADOR</div><p>${escapeHtml(data.about || '')}</p>${data.games ? `<p class="muted">Conteúdos: ${escapeHtml(data.games)}</p>` : ''}<div class="live-interaction-row">${links.map(([label, url]) => `<a class="btn" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer external" referrerpolicy="no-referrer">${escapeHtml(label)}</a>`).join('')}</div></section>`;
   } catch {
     return '';
   }
@@ -376,6 +378,7 @@ async function sendSupport() {
     feedback.innerHTML = '<div class="message err">Entre na sua conta para apoiar.</div>';
     return;
   }
+  if (!currentUser.emailVerified) { feedback.innerHTML = '<div class="message err">Verifique seu e-mail para usar Zy Coins.</div>'; return; }
   if (currentUser.uid === stream.streamerUid) {
     feedback.innerHTML = '<div class="message err">Você não pode apoiar a própria live.</div>';
     return;
@@ -414,7 +417,7 @@ async function sendSupport() {
       if (createRecipient) {
         tx.set(recipientRef, {
           uid: stream.streamerUid,
-          balance: 500 + amount,
+          balance: amount,
           totalSent: 0,
           totalReceived: amount,
           lastTransactionId: txRef.id,
@@ -440,14 +443,6 @@ async function sendSupport() {
         status: 'completed',
         createdAt: serverTimestamp()
       });
-      tx.set(alertRef, {
-        transactionId: txRef.id,
-        fromUid: currentUser.uid,
-        streamId: stream.id,
-        amount,
-        message,
-        createdAt: serverTimestamp()
-      });
     });
 
     try {
@@ -456,6 +451,15 @@ async function sendSupport() {
       if (String(error?.code || '').includes('not-found')) await commit(true);
       else throw error;
     }
+    await setDoc(alertRef, {
+      transactionId: txRef.id,
+      fromUid: currentUser.uid,
+      streamId: stream.id,
+      amount,
+      message,
+      createdAt: serverTimestamp(),
+      expiresAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
+    }).catch(error => console.warn('Apoio concluído, mas o alerta público não pôde ser criado.', error));
     feedback.innerHTML = `<div class="message ok">Apoio de ◈ ${amount.toLocaleString('pt-BR')} enviado!</div>`;
     const input = document.querySelector('#zy-support-message');
     if (input) input.value = '';
@@ -473,6 +477,7 @@ async function sendReaction(emoji) {
     location.href = `login.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
     return;
   }
+  if (!currentUser.emailVerified) return;
   const eventRef = doc(collection(db, 'streams', streamId, 'reactions'));
   const rateRef = doc(db, 'streams', streamId, 'reactionRate', currentUser.uid);
   try {
@@ -480,8 +485,8 @@ async function sendReaction(emoji) {
       const rate = await tx.get(rateRef);
       const last = rate.exists() ? timestampMs(rate.data().lastAt) : 0;
       if (last && Date.now() - last < 900) throw new Error('reaction-rate');
-      tx.set(eventRef, { uid: currentUser.uid, emoji, createdAt: serverTimestamp() });
-      tx.set(rateRef, { uid: currentUser.uid, lastAt: serverTimestamp() }, { merge: true });
+      tx.set(eventRef, { uid: currentUser.uid, emoji, createdAt: serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + 10 * 60 * 1000) });
+      tx.set(rateRef, { uid: currentUser.uid, lastAt: serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + 2 * 60 * 60 * 1000) }, { merge: true });
     });
   } catch (error) {
     if (error?.message !== 'reaction-rate') console.warn('Reação não enviada.', error);
@@ -511,6 +516,7 @@ async function votePoll(index) {
     if (feedback) feedback.innerHTML = '<div class="message err">Entre na conta para votar.</div>';
     return;
   }
+  if (!currentUser.emailVerified) { if (feedback) feedback.innerHTML = '<div class="message err">Verifique seu e-mail para votar.</div>'; return; }
   if (!activePoll || activePoll.status !== 'active' || ![0, 1, 2, 3].includes(index) || !activePoll[`option${index}`]) return;
   const pollRef = doc(db, 'streams', streamId, 'polls', activePoll.id);
   const voteRef = doc(db, 'streams', streamId, 'polls', activePoll.id, 'votes', currentUser.uid);
@@ -534,6 +540,7 @@ async function createClip() {
     location.href = `login.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
     return;
   }
+  if (!currentUser.emailVerified) { alert('Verifique seu e-mail para criar clipes.'); return; }
   const title = window.prompt('Título do clipe:', `Momento de ${streamerProfile?.username || 'streamer'}`)?.trim();
   if (!title) return;
   const started = timestampMs(stream.startedAt);
@@ -547,8 +554,8 @@ async function createClip() {
       creatorUid: currentUser.uid,
       title: title.slice(0, 80),
       momentSeconds,
-      sourceUrl: String(stream.vodURL || stream.playbackURL || ''),
-      thumbnailURL: String(stream.thumbnailURL || ''),
+      sourceUrl: safeStreamingUrl(stream.vodURL || stream.playbackURL || ''),
+      thumbnailURL: safeImageUrl(stream.thumbnailURL || ''),
       matureContent: stream.matureContent === true,
       createdAt: serverTimestamp()
     });
@@ -565,6 +572,7 @@ async function redeemReward(rewardId) {
     if (feedback) feedback.innerHTML = '<div class="message err">Entre na conta para resgatar.</div>';
     return;
   }
+  if (!currentUser.emailVerified) { if (feedback) feedback.innerHTML = '<div class="message err">Verifique seu e-mail para resgatar.</div>'; return; }
   if (currentUser.uid === stream.streamerUid) {
     if (feedback) feedback.innerHTML = '<div class="message err">O criador não pode resgatar a própria recompensa.</div>';
     return;
@@ -591,7 +599,7 @@ async function redeemReward(rewardId) {
         updatedAt: serverTimestamp()
       });
       if (createRecipient) {
-        tx.set(recipientRef, { uid: stream.streamerUid, balance: 500 + cost, totalSent: 0, totalReceived: cost, lastTransactionId: txRef.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        tx.set(recipientRef, { uid: stream.streamerUid, balance: cost, totalSent: 0, totalReceived: cost, lastTransactionId: txRef.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
       } else {
         tx.update(recipientRef, { balance: increment(cost), totalReceived: increment(cost), lastTransactionId: txRef.id, updatedAt: serverTimestamp() });
       }
@@ -695,6 +703,7 @@ function enhanceChatComposer() {
       if (feedback) feedback.textContent = chatSettings?.emergencyMode ? 'Chat em modo de emergência.' : chatSettings?.mode === 'followers' ? 'Chat exclusivo para seguidores.' : 'Chat exclusivo para membros.';
       return;
     }
+    if (!currentUser.emailVerified) { if (feedback) feedback.textContent = 'Verifique seu e-mail para conversar.'; return; }
     const text = input.value.trim();
     if (!text || text.length > 300) return;
     const autoMod = textPassesAutoMod(text);
@@ -708,10 +717,10 @@ function enhanceChatComposer() {
       await runTransaction(db, async tx => {
         const rate = await tx.get(rateRef);
         const last = rate.exists() ? timestampMs(rate.data().lastAt) : 0;
-        const slow = Math.max(0, Math.min(120, Number(chatSettings?.slowModeSeconds || 0)));
-        if (last && slow > 0 && Date.now() - last < slow * 1000) throw new Error('slow-mode');
+        const slow = Math.max(1, Math.min(120, Number(chatSettings?.slowModeSeconds || 0) || 1));
+        if (last && Date.now() - last < slow * 1000) throw new Error('slow-mode');
         tx.set(messageRef, { uid: currentUser.uid, text, createdAt: serverTimestamp() });
-        tx.set(rateRef, { uid: currentUser.uid, lastAt: serverTimestamp() }, { merge: true });
+        tx.set(rateRef, { uid: currentUser.uid, lastAt: serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + 2 * 60 * 60 * 1000) }, { merge: true });
       });
       input.value = '';
       const counter = root.querySelector('#chat-counter');
@@ -770,7 +779,7 @@ function watchPolls() {
 
 function watchSupportAlerts() {
   stopAlerts?.();
-  stopAlerts = onSnapshot(collection(db, 'streams', streamId, 'supportAlerts'), snap => {
+  stopAlerts = onSnapshot(query(collection(db, 'streams', streamId, 'supportAlerts'), orderBy('createdAt', 'desc'), limit(100)), snap => {
     supportAlerts = snap.docs.map(item => ({ id: item.id, ...item.data() }));
     scheduleRender();
   }, () => {});

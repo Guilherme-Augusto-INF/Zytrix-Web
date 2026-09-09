@@ -1,7 +1,8 @@
-import { auth, db, onAuthStateChanged, doc, getDoc, onSnapshot, collection, query, orderBy, limit, setDoc, deleteDoc, runTransaction, increment, serverTimestamp, ensureWallet } from './firebase.js';
+import { auth, db, onAuthStateChanged, doc, getDoc, onSnapshot, collection, query, orderBy, limit, setDoc, deleteDoc, runTransaction, increment, serverTimestamp, Timestamp, ensureWallet } from './firebase.js';
 import { header, footer, escapeHtml, escapeAttr } from './ui.js';
 import { reportLink } from './report-link.js';
 import { getStreamingEmbed, streamingPlatformLabel } from './streaming.js';
+import { safeImageUrl } from './security.js';
 header('ao-vivo');
 footer();
 reportLink(document.querySelector('#live-root'), 'stream', new URLSearchParams(location.search).get('stream') || localStorage.getItem('zytrixSelectedStream') || '');
@@ -200,7 +201,7 @@ function render() {
 
               <div style="display:flex;align-items:center;gap:9px">
                 ${streamerProfile?.photoURL
-        ? `<img class="avatar" src="${escapeHtml(streamerProfile.photoURL)}" alt="${escapeHtml(username)}">`
+        ? `<img class="avatar" src="${escapeAttr(safeImageUrl(streamerProfile.photoURL))}" referrerpolicy="no-referrer" alt="${escapeHtml(username)}">`
         : `<span class="avatar">${escapeHtml(username.charAt(0).toUpperCase())}</span>`}
                 <strong>${escapeHtml(username)}</strong>
               </div>
@@ -331,69 +332,13 @@ function updateChatComposerState() {
     }
 }
 async function sendChatMessage() {
-    const input = document.querySelector('#chat-input');
     const feedback = document.querySelector('#chat-feedback');
-    const sendButton = document.querySelector('#chat-send');
-    if (!input || !feedback || !sendButton)
-        return;
-    feedback.textContent = '';
-    feedback.className = '';
-    if (!user) {
-        setChatFeedback('Faça login para enviar mensagens.', true);
-        return;
-    }
-    if (isBanActive(currentChatBan)) {
-        setChatFeedback('Você está impedido de enviar mensagens neste chat.', true);
-        return;
-    }
-    if (!stream || stream.status !== 'live') {
-        setChatFeedback('O chat está disponível apenas durante a live.', true);
-        return;
-    }
-    const text = input.value.trim();
-    if (!text)
-        return;
-    if (text.length > 300) {
-        setChatFeedback('A mensagem pode ter no máximo 300 caracteres.', true);
-        return;
-    }
-    // Proteção de interface contra spam acidental.
-    const now = Date.now();
-    if (now - lastChatSendAt < 1200) {
-        setChatFeedback('Aguarde um instante antes de enviar outra mensagem.', true);
-        return;
-    }
-    lastChatSendAt = now;
-    sendButton.disabled = true;
-    try {
-        const messageRef = doc(collection(db, 'streams', stream.id, 'chat'));
-        await setDoc(messageRef, {
-            uid: user.uid,
-            text,
-            createdAt: serverTimestamp()
-        });
-        input.value = '';
-        const counter = document.querySelector('#chat-counter');
-        if (counter)
-            counter.textContent = '0/300';
-        setChatFeedback('Enviado.', false);
-        setTimeout(() => {
-            const currentFeedback = document.querySelector('#chat-feedback');
-            if (currentFeedback?.textContent === 'Enviado.') {
-                currentFeedback.textContent = '';
-            }
-        }, 1200);
-    }
-    catch (error) {
-        console.error('Erro ao enviar mensagem:', error);
-        setChatFeedback(error?.code === 'permission-denied'
-            ? 'O Firebase bloqueou a mensagem. Publique as regras atualizadas.'
-            : 'Não foi possível enviar a mensagem.', true);
-    }
-    finally {
-        sendButton.disabled = !(user && stream?.status === 'live');
-    }
+    if (!user) { setChatFeedback('Faça login para enviar mensagens.', true); return; }
+    if (!user.emailVerified) { setChatFeedback('Verifique seu e-mail para conversar.', true); return; }
+    // O envio real é instalado por live-extras.js, que usa chatRate atômico.
+    if (feedback) feedback.textContent = 'Preparando envio seguro...';
 }
+
 function setChatFeedback(message, isError) {
     const feedback = document.querySelector('#chat-feedback');
     if (!feedback)
@@ -627,6 +572,7 @@ async function support() {
         msg.innerHTML = '<div class="message err">Entre na sua conta para apoiar.</div>';
         return;
     }
+    if (!user.emailVerified) { msg.innerHTML = '<div class="message err">Verifique seu e-mail para usar Zy Coins.</div>'; return; }
     if (user.uid === stream.streamerUid) {
         msg.innerHTML = '<div class="message err">Você não pode apoiar a própria live.</div>';
         return;
@@ -662,7 +608,7 @@ async function support() {
             if (createRecipientWallet) {
                 tx.set(recipientRef, {
                     uid: stream.streamerUid,
-                    balance: 500 + amount,
+                    balance: amount,
                     totalSent: 0,
                     totalReceived: amount,
                     lastTransactionId: txRef.id,
@@ -688,13 +634,6 @@ async function support() {
                 status: 'completed',
                 createdAt: serverTimestamp()
             });
-            tx.set(alertRef, {
-                transactionId: txRef.id,
-                fromUid: user.uid,
-                streamId: stream.id,
-                amount,
-                createdAt: serverTimestamp()
-            });
         });
         try {
             await commitSupport(false);
@@ -707,6 +646,14 @@ async function support() {
                 throw error;
             }
         }
+        await setDoc(alertRef, {
+            transactionId: txRef.id,
+            fromUid: user.uid,
+            streamId: stream.id,
+            amount,
+            createdAt: serverTimestamp(),
+            expiresAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
+        }).catch(error => console.warn('Apoio concluído, mas o alerta público não pôde ser criado.', error));
         msg.innerHTML = `<div class="message ok">Apoio de ◈ ${amount.toLocaleString('pt-BR')} enviado!</div>`;
     }
     catch (error) {

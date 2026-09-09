@@ -32,14 +32,19 @@ function levelBadges(level, progressData) {
 
 function render() {
   if (!root || !user || !prefs) return;
-  const existing = root.querySelector('#profile-plus');
-  existing?.remove();
+
+  let section = root.querySelector('#profile-plus');
+  if (!section) {
+    section = document.createElement('section');
+    section.id = 'profile-plus';
+    section.className = 'profile-plus';
+    root.appendChild(section);
+  }
+
   const level = levelFromXp(progress?.xp || 0);
   const achievements = achievementList(progress || {});
   const unlocked = achievements.filter(item => item.unlocked).length;
-  const section = document.createElement('section');
-  section.id = 'profile-plus';
-  section.className = 'profile-plus';
+
   section.innerHTML = `
     <div class="card panel" id="progresso">
       <div class="eyebrow">PROGRESSO</div>
@@ -76,7 +81,7 @@ function render() {
       <div id="viewer-creator-code-feedback"></div>
     </div>
   `;
-  root.appendChild(section);
+
   bind();
 }
 
@@ -97,6 +102,7 @@ function bind() {
       await savePlatformPreferences(user.uid, prefs);
       feedback('#platform-prefs-feedback', 'Preferências salvas.');
     } catch (error) {
+      console.warn('Falha ao salvar preferências do perfil.', error);
       feedback('#platform-prefs-feedback', 'Não foi possível salvar.', true);
     }
   });
@@ -120,14 +126,21 @@ function bind() {
       await saveCreatorAttribution(user.uid, code, snap.data().creatorUid);
       feedback('#viewer-creator-code-feedback', `Código ${code} salvo.`);
     } catch (error) {
+      console.warn('Falha ao salvar código de criador.', error);
       feedback('#viewer-creator-code-feedback', 'Não foi possível salvar o código.', true);
     }
   });
 
   document.querySelector('#clear-viewer-creator-code')?.addEventListener('click', async () => {
-    await saveCreatorAttribution(user.uid, '', '');
-    document.querySelector('#viewer-creator-code').value = '';
-    feedback('#viewer-creator-code-feedback', 'Atribuição removida.');
+    try {
+      await saveCreatorAttribution(user.uid, '', '');
+      const input = document.querySelector('#viewer-creator-code');
+      if (input) input.value = '';
+      feedback('#viewer-creator-code-feedback', 'Atribuição removida.');
+    } catch (error) {
+      console.warn('Falha ao remover código de criador.', error);
+      feedback('#viewer-creator-code-feedback', 'Não foi possível remover a atribuição.', true);
+    }
   });
 }
 
@@ -143,17 +156,35 @@ onAuthStateChanged(auth, async current => {
   stopProgress?.();
   stopProgress = null;
   if (!user) return;
-  prefs = await getPlatformPreferences(user.uid).catch(() => ({ hideMatureContent:false, safeMode:false, allowReactions:true, compactAlerts:false }));
+
+  prefs = await getPlatformPreferences(user.uid).catch(() => ({
+    hideMatureContent: false,
+    safeMode: false,
+    allowReactions: true,
+    compactAlerts: false
+  }));
+
   stopProgress = watchProgress(user.uid, value => {
     progress = value;
     tryMount();
-  }, () => {});
+  }, error => {
+    console.warn('Progresso do perfil indisponível.', error);
+    tryMount();
+  });
+
   tryMount();
 });
 
 if (root) {
-  observer = new MutationObserver(tryMount);
+  observer = new MutationObserver(() => {
+    if (!root.querySelector('#profile-plus')) {
+      tryMount();
+    }
+  });
   observer.observe(root, { childList: true, subtree: false });
 }
 
-window.addEventListener('pagehide', () => { stopProgress?.(); observer?.disconnect(); });
+window.addEventListener('pagehide', () => {
+  stopProgress?.();
+  observer?.disconnect();
+});

@@ -8,7 +8,10 @@ import {
   deleteDoc,
   onSnapshot,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  query,
+  limit,
+  Timestamp
 } from './firebase.js';
 
 export function selectedStreamId() {
@@ -69,7 +72,7 @@ export function watchFollowing(uid, callback, onError = console.error) {
 
 export function watchFollowerCount(channelId, callback, onError = console.error) {
   return onSnapshot(
-    collection(db, 'channels', channelId, 'followers'),
+    query(collection(db, 'channels', channelId, 'followers'), limit(1001)),
     snap => callback(snap.size),
     onError
   );
@@ -89,7 +92,7 @@ export function watchActiveViewers(streamId, callback, onError = console.error) 
   const recalculate = () => callback(activePresenceCount(cached));
 
   const unsubscribe = onSnapshot(
-    collection(db, 'streams', streamId, 'viewers'),
+    query(collection(db, 'streams', streamId, 'viewers'), limit(5001)),
     snap => {
       cached = snap.docs.map(item => item.data());
       recalculate();
@@ -112,18 +115,19 @@ export async function startViewerPresence(uid, streamId) {
   const existing = await getDoc(presenceRef);
 
   if (existing.exists()) {
-    await updateDoc(presenceRef, { lastSeen: serverTimestamp() });
+    await updateDoc(presenceRef, { lastSeen: serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + 2 * 60 * 1000) });
   } else {
     await setDoc(presenceRef, {
       uid,
       joinedAt: serverTimestamp(),
-      lastSeen: serverTimestamp()
+      lastSeen: serverTimestamp(),
+      expiresAt: Timestamp.fromMillis(Date.now() + 2 * 60 * 1000)
     });
   }
 
   const heartbeat = async () => {
     try {
-      await updateDoc(presenceRef, { lastSeen: serverTimestamp() });
+      await updateDoc(presenceRef, { lastSeen: serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + 2 * 60 * 1000) });
     } catch (error) {
       console.warn('Não foi possível atualizar a presença do espectador.', error);
     }
@@ -131,5 +135,8 @@ export async function startViewerPresence(uid, streamId) {
 
   const timer = setInterval(heartbeat, 30_000);
 
-  return () => clearInterval(timer);
+  return () => {
+    clearInterval(timer);
+    deleteDoc(presenceRef).catch(() => {});
+  };
 }

@@ -19,6 +19,7 @@ import {
 } from './firebase.js';
 import { header, footer, escapeHtml, escapeAttr } from './ui.js';
 import { SUPPORT_ALERT_SOUNDS, normalizeSupportAlertSound, playSupportAlertSound, unlockSupportAlertAudio } from './support-alert-sound.js';
+import { safeStreamingUrl, safeSocialUrl } from './security.js';
 
 header();
 footer();
@@ -54,16 +55,7 @@ function dateTimeLocalValue(value) {
   return copy.toISOString().slice(0, 16);
 }
 
-function safeUrl(value = '') {
-  const text = String(value || '').trim();
-  if (!text) return '';
-  try {
-    const url = new URL(text);
-    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';
-  } catch {
-    return '';
-  }
-}
+function safeUrl(value = '') { return safeStreamingUrl(value); }
 
 async function findStream(uid) {
   const snap = await getDocs(query(collection(db, 'streams'), where('streamerUid', '==', uid), limit(1)));
@@ -537,10 +529,10 @@ async function saveChannelProfile() {
     uid: user.uid,
     about: document.querySelector('#channel-about').value.trim().slice(0,800),
     games: document.querySelector('#channel-games').value.trim().slice(0,160),
-    website: safeUrl(document.querySelector('#channel-website').value),
-    youtube: safeUrl(document.querySelector('#channel-youtube').value),
-    instagram: safeUrl(document.querySelector('#channel-instagram').value),
-    tiktok: safeUrl(document.querySelector('#channel-tiktok').value),
+    website: safeSocialUrl('website', document.querySelector('#channel-website').value),
+    youtube: safeSocialUrl('youtube', document.querySelector('#channel-youtube').value),
+    instagram: safeSocialUrl('instagram', document.querySelector('#channel-instagram').value),
+    tiktok: safeSocialUrl('tiktok', document.querySelector('#channel-tiktok').value),
     updatedAt: serverTimestamp()
   };
   await setDoc(doc(db, 'channelProfiles', user.uid), data, { merge: true });
@@ -601,6 +593,7 @@ onAuthStateChanged(auth, current => {
     return;
   }
   user = current;
+  if (!user.emailVerified) { root.innerHTML = '<div class="card panel"><h1>Verifique seu e-mail</h1><p class="muted">Recursos do criador ficam bloqueados até a verificação da conta.</p></div>'; return; }
   loadAll().catch(error => {
     console.error(error);
     root.innerHTML = '<div class="state">Não foi possível carregar o Centro do Criador.</div>';

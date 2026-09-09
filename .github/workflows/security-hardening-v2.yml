@@ -1,0 +1,88 @@
+name: Security Hardening v2
+
+on:
+  push:
+    branches:
+      - security-hardening-v2
+    paths:
+      - '.github/workflows/security-hardening-v2.yml'
+      - 'scripts/security-hardening-v2.py'
+      - 'scripts/security-hardening-v2-fixes.py'
+      - 'scripts/security-hardening-v2-test-fixes.py'
+      - 'tests/security-hardening.rules.test.mjs'
+      - 'tests/firestore.rules.test.mjs'
+      - 'tests/platform-expansion.rules.test.mjs'
+      - 'assets/js/security.js'
+      - 'assets/js/profile-plus.js'
+      - 'assets/js/profile-promotions.js'
+      - 'firestore.rules'
+      - 'firebase/firestore.rules'
+      - 'REGRAS-PARA-COLAR-NO-FIREBASE.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  harden-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: security-hardening-v2
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply base hardening once
+        run: |
+          if grep -Fq 'function verifiedUser()' firestore.rules; then
+            echo 'Base hardening already materialized.'
+          else
+            python3 scripts/security-hardening-v2.py
+          fi
+
+      - name: Apply regression fixes once
+        run: |
+          if grep -Fq 'SECURITY-HARDENING-V2-FIXES' firestore.rules; then
+            echo 'Regression fixes already materialized.'
+          else
+            python3 scripts/security-hardening-v2-fixes.py
+          fi
+
+      - name: Apply final test fixes once
+        run: |
+          if grep -Fq "const deniedDb = as('alice');" tests/platform-expansion.rules.test.mjs && \
+             grep -Fq "await assertSucceeds(setDoc(alert" tests/security-hardening.rules.test.mjs; then
+            echo 'Final test fixes already materialized.'
+          else
+            python3 scripts/security-hardening-v2-test-fixes.py
+          fi
+
+      - name: Persist generated hardening
+        run: |
+          if git diff --quiet; then
+            echo 'No generated changes to commit.'
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "security: finaliza testes do hardening v2"
+            git push origin HEAD:security-hardening-v2
+          fi
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Static checks
+        run: npm run check
+
+      - name: Firestore rules tests
+        run: npm run test:rules
+
+      - name: Verify synchronized rule copies
+        if: always()
+        run: |
+          cmp firestore.rules firebase/firestore.rules
+          cmp firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt

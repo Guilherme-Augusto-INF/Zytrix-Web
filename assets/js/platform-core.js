@@ -109,6 +109,9 @@ export async function savePlatformPreferences(uid, patch = {}) {
 
 export async function recordWatchProgress(uid, streamId) {
   if (!uid || !streamId) return null;
+  const presence = await getDoc(doc(db, 'streams', streamId, 'viewers', uid)).catch(() => null);
+  const seenAt = presence?.exists?.() ? timestampMs(presence.data().lastSeen) : 0;
+  if (!seenAt || Date.now() - seenAt > 2 * 60 * 1000) return { skipped: true, reason: 'presence-required' };
   const ref = doc(db, 'users', uid, 'progress', 'main');
   const nowMs = Date.now();
   const today = utcDayKey();

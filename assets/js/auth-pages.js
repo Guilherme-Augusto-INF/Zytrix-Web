@@ -1,6 +1,7 @@
 import {prepareAcceptance,requireAcceptanceBeforeSignup,recordAcceptance} from './policy-acceptance.js';
 import { auth, db, googleProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, doc, setDoc, serverTimestamp, getDoc } from './firebase.js';
 import { header, footer } from './ui.js';
+import { strongPassword, genericAuthMessage, localRedirect } from './security.js';
 header();
 footer();
 const form = document.querySelector('form[data-auth-form]');
@@ -25,7 +26,7 @@ form?.addEventListener('submit', async (e) => {
         if (mode === 'login') {
             const cred = await signInWithEmailAndPassword(auth, String(fd.get('email')), String(fd.get('password')));
             await ensureDocs(cred.user, cred.user.displayName || 'Usuário', 'password');
-            location.href = 'index.html';
+            location.href = localRedirect(new URLSearchParams(location.search).get('redirect'), 'index.html');
         }
         if (mode === 'register') {
             requireAcceptanceBeforeSignup();
@@ -34,6 +35,8 @@ form?.addEventListener('submit', async (e) => {
             const password = String(fd.get('password') || '');
             if (name.length < 2)
                 throw new Error('Nome muito curto.');
+            if (!strongPassword(password))
+                throw new Error('Use pelo menos 10 caracteres, com letra e número.');
             const cred = await createUserWithEmailAndPassword(auth, email, password);
             await ensureDocs(cred.user, name, 'password');
             await sendEmailVerification(cred.user);
@@ -41,20 +44,22 @@ form?.addEventListener('submit', async (e) => {
             setTimeout(() => location.href = 'index.html', 1200);
         }
         if (mode === 'reset') {
-            await sendPasswordResetEmail(auth, String(fd.get('email')));
-            show('Link de recuperação enviado para seu e-mail.', 'ok');
+            await sendPasswordResetEmail(auth, String(fd.get('email'))).catch(() => {});
+            show('Se existir uma conta para esse e-mail, enviaremos as instruções de recuperação.', 'ok');
         }
     }
     catch (err) {
         console.warn('Falha na autenticação.');
-        show(err?.message?.replace('Firebase: ', '') || 'Não foi possível concluir a operação.');
+        if (mode === 'register' && ['Nome muito curto.', 'Use pelo menos 10 caracteres, com letra e número.'].includes(err?.message)) show(err.message);
+        else if (mode === 'reset') show('Se existir uma conta para esse e-mail, enviaremos as instruções de recuperação.', 'ok');
+        else show(genericAuthMessage());
     }
 });
 document.querySelector('#google-login')?.addEventListener('click', async () => { try {
     requireAcceptanceBeforeSignup();
     const cred = await signInWithPopup(auth, googleProvider);
     await ensureDocs(cred.user, cred.user.displayName || 'Usuário', 'google');
-    location.href = 'index.html';
+    location.href = localRedirect(new URLSearchParams(location.search).get('redirect'), 'index.html');
 }
 catch (err) {
     console.warn('Falha na autenticação.');

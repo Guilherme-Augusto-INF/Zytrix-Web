@@ -47,7 +47,7 @@ function waitForLiveContent() {
 
 function viewerLabel() {
   if (!currentUser) return 'Login necessário';
-  return Number(activeViewers || 0).toLocaleString('pt-BR');
+  return currentUser?.uid === stream?.streamerUid ? Number(activeViewers || 0).toLocaleString('pt-BR') : 'Privado';
 }
 
 function renderPanel() {
@@ -87,7 +87,7 @@ function renderPanel() {
     <div class="social-stats">
       <div class="stat-box">
         <span class="stat-label">Seguidores</span>
-        <strong id="live-follower-count">${followerCount.toLocaleString('pt-BR')}</strong>
+        <strong id="live-follower-count">${currentUser?.uid === stream.streamerUid ? followerCount.toLocaleString('pt-BR') : 'Privado'}</strong>
       </div>
       <div class="stat-box">
         <span class="stat-label">Na Zytrix agora</span>
@@ -162,6 +162,7 @@ async function startPresenceForUser() {
 
   try {
     stopPresence = await startViewerPresence(currentUser.uid, streamId);
+    if (currentUser.uid !== stream?.streamerUid) { activeViewers = null; renderPanel(); return; }
     stopViewers = watchActiveViewers(
       streamId,
       count => {
@@ -186,7 +187,7 @@ async function initialize() {
   const profileSnap = await getDoc(doc(db, 'profiles', stream.streamerUid));
   streamerProfile = profileSnap.exists() ? profileSnap.data() : null;
 
-  stopFollowers = watchFollowerCount(
+  if (currentUser?.uid === stream.streamerUid) stopFollowers = watchFollowerCount(
     stream.streamerUid,
     count => {
       followerCount = count;
