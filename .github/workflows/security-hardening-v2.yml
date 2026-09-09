@@ -1,0 +1,61 @@
+name: Security Hardening v2
+
+on:
+  push:
+    branches:
+      - security-hardening-v2
+    paths:
+      - '.github/workflows/security-hardening-v2.yml'
+      - 'scripts/security-hardening-v2.py'
+      - 'tests/security-hardening.rules.test.mjs'
+      - 'assets/js/security.js'
+
+permissions:
+  contents: write
+
+jobs:
+  harden-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: security-hardening-v2
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply security hardening
+        run: python3 scripts/security-hardening-v2.py
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Static checks
+        run: npm run check
+
+      - name: Firestore rules tests
+        run: npm run test:rules
+
+      - name: Security regression tests
+        run: |
+          npx firebase emulators:exec --project demo-zytrix-governance --only firestore \
+            "node --test --test-concurrency=1 tests/security-hardening.rules.test.mjs"
+
+      - name: Verify synchronized rule copies
+        run: |
+          cmp firestore.rules firebase/firestore.rules
+          cmp firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+
+      - name: Commit hardened files
+        run: |
+          if git diff --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "security: aplica hardening v2 validado"
+          git push origin HEAD:security-hardening-v2
