@@ -29,7 +29,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com wss://*.firebaseio.com; img-src 'self' data: blob: https://*.googleusercontent.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://static-cdn.jtvnw.net https://clips-media-assets2.twitch.tv https://*.kick.com; frame-src https://player.twitch.tv https://*.twitch.tv https://player.kick.com https://*.kick.com https://accounts.google.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com wss://*.firebaseio.com; img-src 'self' data: blob: https://*.googleusercontent.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://static-cdn.jtvnw.net https://clips-media-assets2.twitch.tv https://*.kick.com https://i.ytimg.com https://img.youtube.com https://yt3.ggpht.com; frame-src https://player.twitch.tv https://*.twitch.tv https://player.kick.com https://*.kick.com https://www.youtube.com https://www.youtube-nocookie.com https://accounts.google.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
         },
         {
           "key": "X-Frame-Options",
@@ -64,105 +64,30 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/ao-vivo",
-      "destination": "/ao-vivo.html"
-    },
-    {
-      "source": "/categorias",
-      "destination": "/categorias.html"
-    },
-    {
-      "source": "/categoria",
-      "destination": "/categoria.html"
-    },
-    {
-      "source": "/live",
-      "destination": "/live.html"
-    },
-    {
-      "source": "/recursos",
-      "destination": "/recursos.html"
-    },
-    {
-      "source": "/faq",
-      "destination": "/faq.html"
-    },
-    {
-      "source": "/sobre",
-      "destination": "/sobre.html"
-    },
-    {
-      "source": "/login",
-      "destination": "/login.html"
-    },
-    {
-      "source": "/registro",
-      "destination": "/registro.html"
-    },
-    {
-      "source": "/recuperar-senha",
-      "destination": "/recuperar-senha.html"
-    },
-    {
-      "source": "/perfil",
-      "destination": "/perfil.html"
-    },
-    {
-      "source": "/config-live",
-      "destination": "/config-live.html"
-    },
-    {
-      "source": "/loja",
-      "destination": "/loja.html"
-    },
-    {
-      "source": "/pagamento",
-      "destination": "/pagamento.html"
-    },
-    {
-      "source": "/sair",
-      "destination": "/sair.html"
-    },
-    {
-      "source": "/notificacoes",
-      "destination": "/notificacoes.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/admin.html"
-    },
-    {
-      "source": "/termos",
-      "destination": "/termos.html"
-    },
-    {
-      "source": "/privacidade",
-      "destination": "/privacidade.html"
-    },
-    {
-      "source": "/diretrizes-da-comunidade",
-      "destination": "/diretrizes-da-comunidade.html"
-    },
-    {
-      "source": "/denuncias-e-moderacao",
-      "destination": "/denuncias-e-moderacao.html"
-    },
-    {
-      "source": "/conteudo-proibido",
-      "destination": "/conteudo-proibido.html"
-    },
-    {
-      "source": "/politicas",
-      "destination": "/politicas.html"
-    },
-    {
-      "source": "/denunciar",
-      "destination": "/denunciar.html"
-    },
-    {
-      "source": "/moderacao",
-      "destination": "/moderacao.html"
-    }
+    { "source": "/ao-vivo", "destination": "/ao-vivo.html" },
+    { "source": "/categorias", "destination": "/categorias.html" },
+    { "source": "/categoria", "destination": "/categoria.html" },
+    { "source": "/live", "destination": "/live.html" },
+    { "source": "/recursos", "destination": "/recursos.html" },
+    { "source": "/faq", "destination": "/faq.html" },
+    { "source": "/sobre", "destination": "/sobre.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/registro", "destination": "/registro.html" },
+    { "source": "/recuperar-senha", "destination": "/recuperar-senha.html" },
+    { "source": "/perfil", "destination": "/perfil.html" },
+    { "source": "/config-live", "destination": "/config-live.html" },
+    { "source": "/loja", "destination": "/loja.html" },
+    { "source": "/pagamento", "destination": "/pagamento.html" },
+    { "source": "/sair", "destination": "/sair.html" },
+    { "source": "/notificacoes", "destination": "/notificacoes.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/termos", "destination": "/termos.html" },
+    { "source": "/privacidade", "destination": "/privacidade.html" },
+    { "source": "/diretrizes-da-comunidade", "destination": "/diretrizes-da-comunidade.html" },
+    { "source": "/denuncias-e-moderacao", "destination": "/denuncias-e-moderacao.html" },
+    { "source": "/conteudo-proibido", "destination": "/conteudo-proibido.html" },
+    { "source": "/politicas", "destination": "/politicas.html" },
+    { "source": "/denunciar", "destination": "/denunciar.html" },
+    { "source": "/moderacao", "destination": "/moderacao.html" }
   ]
 }
