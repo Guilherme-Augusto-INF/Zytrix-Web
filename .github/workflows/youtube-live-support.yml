@@ -1,0 +1,73 @@
+name: YouTube Live Support
+
+on:
+  push:
+    branches: [youtube-live-support]
+    paths:
+      - 'scripts/add-youtube-live.py'
+      - '.github/workflows/youtube-live-support.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: youtube-live-support
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Aplicar patch YouTube Live
+        run: python3 scripts/add-youtube-live.py
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes JS
+        run: npm test
+
+      - name: Check do site
+        run: npm run check
+
+      - name: Testes Firestore Rules
+        run: npm run test:rules
+
+      - name: Validar diff e cópias das Rules
+        run: |
+          git diff --check
+          cmp firestore.rules firebase/firestore.rules
+          cmp firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
+          grep -q "youtube\\\\.com" firestore.rules
+          grep -q "platform: 'youtube'" assets/js/streaming.js
+
+      - name: Preparar Rules para download
+        run: |
+          mkdir -p youtube-live-rules
+          cp firestore.rules youtube-live-rules/REGRAS-FIRESTORE-ZYTRIX-YOUTUBE-LIVE.rules
+          cp firestore.rules youtube-live-rules/REGRAS-FIRESTORE-ZYTRIX-YOUTUBE-LIVE.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zytrix-youtube-live-rules
+          path: youtube-live-rules/
+          if-no-files-found: error
+
+      - name: Commitar alterações validadas
+        run: |
+          if git diff --quiet; then
+            echo 'Sem alterações adicionais para commitar.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add firestore.rules firebase/firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt README.md assets/js/config-live.js assets/js/perfil.js assets/js/live.js assets/js/live-extras.js tests/security-hardening.rules.test.mjs
+          git commit -m 'feat: habilita YouTube Live nas Rules e interface'
+          git push origin HEAD:youtube-live-support
