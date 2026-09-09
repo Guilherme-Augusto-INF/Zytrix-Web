@@ -559,7 +559,7 @@ async function createClip() {
       matureContent: stream.matureContent === true,
       createdAt: serverTimestamp()
     });
-    alert(`Clipe salvo em ${formatClipTime(momentSeconds)}. Como a transmissão vem da Twitch/Kick, a Zytrix salva o momento e o link; o vídeo continua sujeito ao VOD/clipe da plataforma de origem.`);
+    alert(`Clipe salvo em ${formatClipTime(momentSeconds)}. Como a transmissão vem do YouTube/Twitch/Kick, a Zytrix salva o momento e o link; o vídeo continua sujeito ao VOD/clipe da plataforma de origem.`);
   } catch (error) {
     console.error(error);
     alert('Não foi possível criar o clipe agora.');

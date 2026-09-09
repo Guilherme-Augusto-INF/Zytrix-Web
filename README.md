@@ -67,9 +67,9 @@ Depois abra:
 http://localhost:5500
 ```
 
-## Twitch e Kick
+## YouTube, Twitch e Kick
 
-O campo `playbackURL` da live aceita um canal da Twitch ou Kick.
+O campo `playbackURL` aceita uma live/vídeo incorporável do YouTube ou um canal da Twitch/Kick.
 
 Exemplos:
 
