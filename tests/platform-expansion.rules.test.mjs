@@ -175,11 +175,12 @@ test('chat followers-only bloqueia não seguidor e libera seguidor', async () =>
       updatedBy: 'bob', updatedAt: Timestamp.fromMillis(1)
     });
   });
-  const denied = writeBatch(as('alice'));
-  denied.set(doc(as('alice'), 'streams', 'live1', 'chatRate', 'alice'), {
+  const deniedDb = as('alice');
+  const denied = writeBatch(deniedDb);
+  denied.set(doc(deniedDb, 'streams', 'live1', 'chatRate', 'alice'), {
     uid:'alice', lastAt:serverTimestamp(), expiresAt:Timestamp.fromMillis(Date.now()+2*60*60*1000)
   });
-  denied.set(doc(as('alice'), 'streams', 'live1', 'chat', 'm1'), {
+  denied.set(doc(deniedDb, 'streams', 'live1', 'chat', 'm1'), {
     uid: 'alice', text: 'oi', createdAt: serverTimestamp()
   });
   await assertFails(denied.commit());

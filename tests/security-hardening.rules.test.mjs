@@ -87,10 +87,10 @@ test('primeiro apoio não cria bônus escondido no destinatário', async () => {
       transactionId: 'support-sec', fromUid: 'alice', toUid: 'bob', streamId: 'live1',
       amount: 50, type: 'stream_support', status: 'completed', createdAt: serverTimestamp()
     });
-    tx.set(alert, {
-      transactionId: 'support-sec', fromUid: 'alice', streamId: 'live1', amount: 50,
-      createdAt: serverTimestamp(), expiresAt
-    });
+  }));
+  await assertSucceeds(setDoc(alert, {
+    transactionId: 'support-sec', fromUid: 'alice', streamId: 'live1', amount: 50,
+    createdAt: serverTimestamp(), expiresAt
   }));
   const snap = await getDoc(doc(as('bob'), 'wallets', 'bob'));
   assert.equal(snap.data().balance, 50);
