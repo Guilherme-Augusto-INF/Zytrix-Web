@@ -153,7 +153,7 @@ onAuthStateChanged(auth, async current => {
 
 if (root) {
   observer = new MutationObserver(tryMount);
-  observer.observe(root, { childList: true, subtree: true });
+  observer.observe(root, { childList: true, subtree: false });
 }
 
 window.addEventListener('pagehide', () => { stopProgress?.(); observer?.disconnect(); });

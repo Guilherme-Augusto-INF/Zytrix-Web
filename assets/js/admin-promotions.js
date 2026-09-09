@@ -118,6 +118,7 @@ async function togglePromotion(id) {
 
 function tryMount() {
   if (!root || !user) return;
+  if (root.querySelector('#admin-promotions')) return;
   if (root.querySelector('.state')) return;
   mount();
 }

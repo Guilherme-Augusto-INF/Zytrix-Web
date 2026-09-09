@@ -832,7 +832,7 @@ async function initialize() {
   watchChatSettings();
 
   observer = new MutationObserver(scheduleRender);
-  observer.observe(root, { childList: true, subtree: true });
+  observer.observe(root, { childList: true, subtree: false });
   scheduleRender();
 }
 

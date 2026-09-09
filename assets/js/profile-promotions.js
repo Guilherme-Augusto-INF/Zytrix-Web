@@ -112,7 +112,7 @@ onAuthStateChanged(auth, current => {
 
 if (root) {
   observer = new MutationObserver(tryMount);
-  observer.observe(root, { childList: true, subtree: true });
+  observer.observe(root, { childList: true, subtree: false });
 }
 
 window.addEventListener('pagehide', () => observer?.disconnect());

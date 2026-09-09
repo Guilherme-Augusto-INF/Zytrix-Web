@@ -38,7 +38,12 @@ onAuthStateChanged(auth, current => {
   else { followed = new Set(); mount(); }
 });
 
-observer = new MutationObserver(mount);
-observer.observe(document.documentElement, { childList:true, subtree:true });
-mount();
+observer = new MutationObserver(() => {
+  if (document.querySelector('#category-title')) {
+    mount();
+    observer.disconnect();
+  }
+});
+if (document.querySelector('#category-title')) mount();
+else observer.observe(document.documentElement, { childList:true, subtree:true });
 window.addEventListener('pagehide', () => { stop?.(); observer?.disconnect(); });

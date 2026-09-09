@@ -354,6 +354,37 @@
 .zytrix-mini-mode .player { border-radius: 0 !important; min-height: 100vh; }
 .zytrix-mini-mode .player iframe { width: 100%; height: 100vh; }
 
+
+.support-alert-theme-minimal {
+  box-shadow: none !important;
+  border-color: #334155 !important;
+  background: rgba(2, 6, 23, .94) !important;
+}
+.support-alert-theme-celebrate {
+  border-color: #f59e0b !important;
+  box-shadow: 0 16px 44px rgba(245, 158, 11, .18) !important;
+}
+.support-alert-theme-neon {
+  border-color: #22d3ee !important;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, .25), 0 0 30px rgba(139, 92, 246, .32) !important;
+}
+.support-alert-burst {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-size: 30px;
+  letter-spacing: 20px;
+  color: #fde68a;
+  animation: zySupportBurst 1.35s ease-out forwards;
+}
+@keyframes zySupportBurst {
+  0% { opacity: 0; transform: scale(.65); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+
 .mature-hidden-card { display: none !important; }
 .mature-badge { display: inline-flex; padding: 4px 7px; border-radius: 6px; background: #7f1d1d; color: #fecaca; font-size: 10px; font-weight: 800; }
 

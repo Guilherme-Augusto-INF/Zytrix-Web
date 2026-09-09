@@ -44,11 +44,11 @@ async function load() {
   if (channelSnap?.exists?.()) {
     const [followers, clips] = await Promise.all([
       getDocs(collection(db, 'channels', user.uid, 'followers')).catch(() => null),
-      getDocs(query(collection(db, 'clips'), where('streamerUid', '==', user.uid), orderBy('createdAt', 'desc'), limit(20))).catch(() => null)
+      getDocs(query(collection(db, 'clips'), where('streamerUid', '==', user.uid), limit(20))).catch(() => null)
     ]);
     data.followers = await Promise.all((followers?.docs || []).map(async item => ({ id: item.id, ...item.data(), profile: await profileFor(item.id) })));
     data.followers.sort((a,b) => tsMs(b.followedAt) - tsMs(a.followedAt));
-    data.clips = clips?.docs?.map(item => ({ id: item.id, ...item.data() })) || [];
+    data.clips = (clips?.docs?.map(item => ({ id: item.id, ...item.data() })) || []).sort((a, b) => tsMs(b.createdAt) - tsMs(a.createdAt));
   }
 
   const followed = followingSnap?.docs?.map(item => item.id) || [];
@@ -87,6 +87,7 @@ function mount() {
 }
 
 function tryMount() {
+  if (root?.querySelector('#notifications-plus')) return;
   if (!root?.querySelector('.state')) mount();
 }
 
