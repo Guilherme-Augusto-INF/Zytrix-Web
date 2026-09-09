@@ -443,15 +443,6 @@ async function sendSupport() {
         status: 'completed',
         createdAt: serverTimestamp()
       });
-      tx.set(alertRef, {
-        transactionId: txRef.id,
-        fromUid: currentUser.uid,
-        streamId: stream.id,
-        amount,
-        message,
-        createdAt: serverTimestamp(),
-        expiresAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
-      });
     });
 
     try {
@@ -460,6 +451,15 @@ async function sendSupport() {
       if (String(error?.code || '').includes('not-found')) await commit(true);
       else throw error;
     }
+    await setDoc(alertRef, {
+      transactionId: txRef.id,
+      fromUid: currentUser.uid,
+      streamId: stream.id,
+      amount,
+      message,
+      createdAt: serverTimestamp(),
+      expiresAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
+    }).catch(error => console.warn('Apoio concluído, mas o alerta público não pôde ser criado.', error));
     feedback.innerHTML = `<div class="message ok">Apoio de ◈ ${amount.toLocaleString('pt-BR')} enviado!</div>`;
     const input = document.querySelector('#zy-support-message');
     if (input) input.value = '';

@@ -1,6 +1,7 @@
 rules_version = '2';
 
 service cloud.firestore {
+  // SECURITY-HARDENING-V2-FIXES
   match /databases/{database}/documents {
 
     // ==================================================
@@ -1880,9 +1881,10 @@ service cloud.firestore {
       // ================================================
       // ALERTAS PÚBLICOS DE APOIO
       // ================================================
-      // Evento sanitizado criado na mesma operação
-      // atômica da transação stream_support.
-      // Não expõe saldo, carteira ou pedido de compra.
+      // O movimento financeiro é concluído primeiro. O alerta público é
+      // criado em uma segunda escrita e só é aceito quando referencia uma
+      // transação stream_support já existente e imutável. Isso evita estourar
+      // o limite de expressões das Rules sem permitir alertas falsos.
       // ================================================
 
       match /supportAlerts/{alertId} {
@@ -1893,29 +1895,17 @@ service cloud.firestore {
         allow create:
           if verifiedUser()
 
-          && request.resource.data.transactionId
-              == alertId
-
-          && request.resource.data.fromUid
-              == request.auth.uid
-
-          && request.resource.data.streamId
-              == streamId
-
-          && validCoinAmount(
-            request.resource.data.amount
-          )
-
-          && request.resource.data.createdAt
-              == request.time
+          && request.resource.data.transactionId == alertId
+          && request.resource.data.fromUid == request.auth.uid
+          && request.resource.data.streamId == streamId
+          && validCoinAmount(request.resource.data.amount)
+          && request.resource.data.createdAt == request.time
 
           && request.resource.data.expiresAt is timestamp
           && request.resource.data.expiresAt >= request.time + duration.value(23, "h")
           && request.resource.data.expiresAt <= request.time + duration.value(25, "h")
 
-          && validOptionalSupportMessage(
-            request.resource.data
-          )
+          && validOptionalSupportMessage(request.resource.data)
 
           && request.resource.data.keys().hasOnly([
             "transactionId",
@@ -1927,61 +1917,57 @@ service cloud.firestore {
             "expiresAt"
           ])
 
-          && get(
-            /databases/$(database)/documents/streams/$(streamId)
-          ).data.status == "live"
+          && exists(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          )
 
-          && getAfter(
+          && get(
             /databases/$(database)/documents/zyCoinTransactions/$(alertId)
           ).data.transactionId == alertId
 
-          && getAfter(
+          && get(
             /databases/$(database)/documents/zyCoinTransactions/$(alertId)
           ).data.fromUid == request.auth.uid
 
-          && getAfter(
+          && get(
             /databases/$(database)/documents/zyCoinTransactions/$(alertId)
           ).data.toUid == get(
             /databases/$(database)/documents/streams/$(streamId)
           ).data.streamerUid
 
-          && getAfter(
+          && get(
             /databases/$(database)/documents/zyCoinTransactions/$(alertId)
           ).data.streamId == streamId
 
-          && getAfter(
+          && get(
             /databases/$(database)/documents/zyCoinTransactions/$(alertId)
           ).data.amount == request.resource.data.amount
+
+          && get(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.type == "stream_support"
+
+          && get(
+            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
+          ).data.status == "completed"
 
           && (
             (
               !request.resource.data.keys().hasAll(["message"])
-              && !getAfter(
+              && !get(
                 /databases/$(database)/documents/zyCoinTransactions/$(alertId)
               ).data.keys().hasAll(["message"])
             )
             || (
               request.resource.data.keys().hasAll(["message"])
-              && getAfter(
+              && get(
                 /databases/$(database)/documents/zyCoinTransactions/$(alertId)
               ).data.keys().hasAll(["message"])
-              && request.resource.data.message == getAfter(
+              && request.resource.data.message == get(
                 /databases/$(database)/documents/zyCoinTransactions/$(alertId)
               ).data.message
             )
-          )
-
-          && getAfter(
-            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
-          ).data.type == "stream_support"
-
-          && getAfter(
-            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
-          ).data.status == "completed"
-
-          && getAfter(
-            /databases/$(database)/documents/zyCoinTransactions/$(alertId)
-          ).data.createdAt == request.time;
+          );
 
         allow update, delete:
           if false;
@@ -2299,30 +2285,8 @@ service cloud.firestore {
 
       allow update:
         if isAdmin()
-        || (
-          getAfter(
-            /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.lastTransactionId)
-          ).data.type == "stream_support"
-          && (
-            validSenderWalletUpdate(uid)
-            || validRecipientWalletUpdate(uid)
-          )
-        )
-        || (
-          getAfter(
-            /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.lastTransactionId)
-          ).data.type == "reward_redeem"
-          && (
-            validSenderWalletUpdate(uid)
-            || validRecipientWalletUpdate(uid)
-          )
-        )
-        || (
-          getAfter(
-            /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.lastTransactionId)
-          ).data.type == "promotion_claim"
-          && validPromotionWalletUpdate(uid)
-        );
+        || validSenderWalletUpdate(uid)
+        || validRecipientWalletUpdate(uid);
 
 
       // ================================================

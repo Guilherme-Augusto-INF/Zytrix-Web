@@ -634,13 +634,6 @@ async function support() {
                 status: 'completed',
                 createdAt: serverTimestamp()
             });
-            tx.set(alertRef, {
-                transactionId: txRef.id,
-                fromUid: user.uid,
-                streamId: stream.id,
-                amount,
-                createdAt: serverTimestamp()
-            });
         });
         try {
             await commitSupport(false);
@@ -653,6 +646,14 @@ async function support() {
                 throw error;
             }
         }
+        await setDoc(alertRef, {
+            transactionId: txRef.id,
+            fromUid: user.uid,
+            streamId: stream.id,
+            amount,
+            createdAt: serverTimestamp(),
+            expiresAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
+        }).catch(error => console.warn('Apoio concluído, mas o alerta público não pôde ser criado.', error));
         msg.innerHTML = `<div class="message ok">Apoio de ◈ ${amount.toLocaleString('pt-BR')} enviado!</div>`;
     }
     catch (error) {

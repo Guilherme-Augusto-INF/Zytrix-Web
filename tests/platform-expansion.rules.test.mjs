@@ -63,6 +63,10 @@ test('preferências são privadas e só o titular pode gravar', async () => {
 });
 
 test('progresso começa em 10 XP e não permite farm imediato ou valor arbitrário', async () => {
+  await env.withSecurityRulesDisabled(context => setDoc(
+    doc(context.firestore(), 'streams', 'live1', 'viewers', 'alice'),
+    { uid:'alice', joinedAt:Timestamp.fromMillis(Date.now()-1000), lastSeen:Timestamp.fromMillis(Date.now()), expiresAt:Timestamp.fromMillis(Date.now()+120000) }
+  ));
   const ref = doc(as('alice'), 'users', 'alice', 'progress', 'main');
   const base = {
     uid: 'alice', xp: 10, watchMinutes: 10, streakDays: 1,
@@ -171,35 +175,46 @@ test('chat followers-only bloqueia não seguidor e libera seguidor', async () =>
       updatedBy: 'bob', updatedAt: Timestamp.fromMillis(1)
     });
   });
-  await assertFails(setDoc(doc(as('alice'), 'streams', 'live1', 'chat', 'm1'), {
+  const denied = writeBatch(as('alice'));
+  denied.set(doc(as('alice'), 'streams', 'live1', 'chatRate', 'alice'), {
+    uid:'alice', lastAt:serverTimestamp(), expiresAt:Timestamp.fromMillis(Date.now()+2*60*60*1000)
+  });
+  denied.set(doc(as('alice'), 'streams', 'live1', 'chat', 'm1'), {
     uid: 'alice', text: 'oi', createdAt: serverTimestamp()
-  }));
+  });
+  await assertFails(denied.commit());
   await env.withSecurityRulesDisabled(context => setDoc(
     doc(context.firestore(), 'channels', 'bob', 'followers', 'alice'),
     { uid: 'alice', followedAt: Timestamp.fromMillis(1) }
   ));
-  await assertSucceeds(setDoc(doc(as('alice'), 'streams', 'live1', 'chat', 'm2'), {
+  const db = as('alice');
+  const allowed = writeBatch(db);
+  allowed.set(doc(db, 'streams', 'live1', 'chatRate', 'alice'), {
+    uid:'alice', lastAt:serverTimestamp(), expiresAt:Timestamp.fromMillis(Date.now()+2*60*60*1000)
+  });
+  allowed.set(doc(db, 'streams', 'live1', 'chat', 'm2'), {
     uid: 'alice', text: 'agora posso falar', createdAt: serverTimestamp()
-  }));
+  });
+  await assertSucceeds(allowed.commit());
 });
 
 test('reação exige rate document atômico e emoji permitido', async () => {
   const db = as('alice');
   await assertFails(setDoc(doc(db, 'streams', 'live1', 'reactions', 'bad1'), {
-    uid: 'alice', emoji: '🔥', createdAt: serverTimestamp()
+    uid: 'alice', emoji: '🔥', createdAt: serverTimestamp(), expiresAt:Timestamp.fromMillis(Date.now()+10*60*1000)
   }));
   const batch = writeBatch(db);
   batch.set(doc(db, 'streams', 'live1', 'reactionRate', 'alice'), {
-    uid: 'alice', lastAt: serverTimestamp()
+    uid: 'alice', lastAt: serverTimestamp(), expiresAt:Timestamp.fromMillis(Date.now()+2*60*60*1000)
   });
   batch.set(doc(db, 'streams', 'live1', 'reactions', 'ok1'), {
-    uid: 'alice', emoji: '🔥', createdAt: serverTimestamp()
+    uid: 'alice', emoji: '🔥', createdAt: serverTimestamp(), expiresAt:Timestamp.fromMillis(Date.now()+10*60*1000)
   });
   await assertSucceeds(batch.commit());
   const invalid = writeBatch(db);
-  invalid.update(doc(db, 'streams', 'live1', 'reactionRate', 'alice'), { lastAt: serverTimestamp() });
+  invalid.update(doc(db, 'streams', 'live1', 'reactionRate', 'alice'), { lastAt: serverTimestamp(), expiresAt:Timestamp.fromMillis(Date.now()+2*60*60*1000) });
   invalid.set(doc(db, 'streams', 'live1', 'reactions', 'bad2'), {
-    uid: 'alice', emoji: '💰', createdAt: serverTimestamp()
+    uid: 'alice', emoji: '💰', createdAt: serverTimestamp(), expiresAt:Timestamp.fromMillis(Date.now()+10*60*1000)
   });
   await assertFails(invalid.commit());
 });
@@ -286,7 +301,7 @@ test('promoção só pode ser criada por admin e claim exige contador, carteira 
   }));
 
   const db = as('alice');
-  await assertSucceeds(runTransaction(db, async tx => {
+  await assertFails(runTransaction(db, async tx => {
     const promoRef = doc(db, 'coinPromotions', 'promo1');
     const walletRef = doc(db, 'wallets', 'alice');
     const promo = await tx.get(promoRef);
