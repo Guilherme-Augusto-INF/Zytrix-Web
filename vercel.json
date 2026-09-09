@@ -64,30 +64,105 @@
     }
   ],
   "rewrites": [
-    { "source": "/ao-vivo", "destination": "/ao-vivo.html" },
-    { "source": "/categorias", "destination": "/categorias.html" },
-    { "source": "/categoria", "destination": "/categoria.html" },
-    { "source": "/live", "destination": "/live.html" },
-    { "source": "/recursos", "destination": "/recursos.html" },
-    { "source": "/faq", "destination": "/faq.html" },
-    { "source": "/sobre", "destination": "/sobre.html" },
-    { "source": "/login", "destination": "/login.html" },
-    { "source": "/registro", "destination": "/registro.html" },
-    { "source": "/recuperar-senha", "destination": "/recuperar-senha.html" },
-    { "source": "/perfil", "destination": "/perfil.html" },
-    { "source": "/config-live", "destination": "/config-live.html" },
-    { "source": "/loja", "destination": "/loja.html" },
-    { "source": "/pagamento", "destination": "/pagamento.html" },
-    { "source": "/sair", "destination": "/sair.html" },
-    { "source": "/notificacoes", "destination": "/notificacoes.html" },
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/termos", "destination": "/termos.html" },
-    { "source": "/privacidade", "destination": "/privacidade.html" },
-    { "source": "/diretrizes-da-comunidade", "destination": "/diretrizes-da-comunidade.html" },
-    { "source": "/denuncias-e-moderacao", "destination": "/denuncias-e-moderacao.html" },
-    { "source": "/conteudo-proibido", "destination": "/conteudo-proibido.html" },
-    { "source": "/politicas", "destination": "/politicas.html" },
-    { "source": "/denunciar", "destination": "/denunciar.html" },
-    { "source": "/moderacao", "destination": "/moderacao.html" }
+    {
+      "source": "/ao-vivo",
+      "destination": "/ao-vivo.html"
+    },
+    {
+      "source": "/categorias",
+      "destination": "/categorias.html"
+    },
+    {
+      "source": "/categoria",
+      "destination": "/categoria.html"
+    },
+    {
+      "source": "/live",
+      "destination": "/live.html"
+    },
+    {
+      "source": "/recursos",
+      "destination": "/recursos.html"
+    },
+    {
+      "source": "/faq",
+      "destination": "/faq.html"
+    },
+    {
+      "source": "/sobre",
+      "destination": "/sobre.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/registro",
+      "destination": "/registro.html"
+    },
+    {
+      "source": "/recuperar-senha",
+      "destination": "/recuperar-senha.html"
+    },
+    {
+      "source": "/perfil",
+      "destination": "/perfil.html"
+    },
+    {
+      "source": "/config-live",
+      "destination": "/config-live.html"
+    },
+    {
+      "source": "/loja",
+      "destination": "/loja.html"
+    },
+    {
+      "source": "/pagamento",
+      "destination": "/pagamento.html"
+    },
+    {
+      "source": "/sair",
+      "destination": "/sair.html"
+    },
+    {
+      "source": "/notificacoes",
+      "destination": "/notificacoes.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/termos",
+      "destination": "/termos.html"
+    },
+    {
+      "source": "/privacidade",
+      "destination": "/privacidade.html"
+    },
+    {
+      "source": "/diretrizes-da-comunidade",
+      "destination": "/diretrizes-da-comunidade.html"
+    },
+    {
+      "source": "/denuncias-e-moderacao",
+      "destination": "/denuncias-e-moderacao.html"
+    },
+    {
+      "source": "/conteudo-proibido",
+      "destination": "/conteudo-proibido.html"
+    },
+    {
+      "source": "/politicas",
+      "destination": "/politicas.html"
+    },
+    {
+      "source": "/denunciar",
+      "destination": "/denunciar.html"
+    },
+    {
+      "source": "/moderacao",
+      "destination": "/moderacao.html"
+    }
   ]
 }
