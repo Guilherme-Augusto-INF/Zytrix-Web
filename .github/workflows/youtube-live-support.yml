@@ -45,7 +45,7 @@ jobs:
           git diff --check
           cmp firestore.rules firebase/firestore.rules
           cmp firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
-          grep -q "youtube\\\\.com" firestore.rules
+          grep -q "youtube" firestore.rules
           grep -q "platform: 'youtube'" assets/js/streaming.js
 
       - name: Preparar Rules para download
