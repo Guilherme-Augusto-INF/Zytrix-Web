@@ -1,0 +1,48 @@
+name: Deploy Vercel Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-vercel-production.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_ORG_ID: team_7faiMzAW5sdaS8Bu11qX4Ev2
+  VERCEL_PROJECT_ID: prj_RIZKlfqoO8LEgRqg258hC0jgtkS2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar credencial Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo 'VERCEL_TOKEN não está configurado neste repositório.'
+            exit 78
+          fi
+
+      - name: Preparar pacote estático
+        run: |
+          set -euo pipefail
+          mkdir -p export/assets/css export/assets/js export/.vercel
+          cp ./*.html export/
+          cp robots.txt sitemap.xml vercel.json export/
+          cp assets/css/*.css export/assets/css/
+          cp assets/js/*.js export/assets/js/
+          printf '%s\n' '{"orgId":"team_7faiMzAW5sdaS8Bu11qX4Ev2","projectId":"prj_RIZKlfqoO8LEgRqg258hC0jgtkS2"}' > export/.vercel/project.json
+          test -f export/perfil.html
+          test -f export/assets/js/profile-plus.js
+
+      - name: Deploy produção
+        working-directory: export
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx --yes vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN"
