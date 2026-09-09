@@ -13,6 +13,8 @@ on:
       - 'tests/firestore.rules.test.mjs'
       - 'tests/platform-expansion.rules.test.mjs'
       - 'assets/js/security.js'
+      - 'assets/js/profile-plus.js'
+      - 'assets/js/profile-promotions.js'
       - 'firestore.rules'
       - 'firebase/firestore.rules'
       - 'REGRAS-PARA-COLAR-NO-FIREBASE.txt'
