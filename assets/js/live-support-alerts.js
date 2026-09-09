@@ -22,6 +22,9 @@ const streamId = new URLSearchParams(location.search).get('stream') ||
 const root = document.querySelector('#live-root');
 
 let streamSound = 'coin';
+let minCoins = 1;
+let durationMs = 4200;
+let theme = 'classic';
 let stopAlerts = null;
 let stopStream = null;
 let observer = null;
@@ -35,6 +38,10 @@ const profileCache = new Map();
 function timestampMs(value) {
   const date = value?.toDate?.();
   return date ? date.getTime() : 0;
+}
+
+function normalizeTheme(value) {
+  return ['classic', 'minimal', 'celebrate', 'neon'].includes(value) ? value : 'classic';
 }
 
 async function profileFor(uid) {
@@ -98,9 +105,24 @@ function clearVisibleCard(stage) {
   showNext();
 }
 
+function addCelebration(stage) {
+  if (theme !== 'celebrate') return;
+  const burst = document.createElement('div');
+  burst.className = 'support-alert-burst';
+  burst.setAttribute('aria-hidden', 'true');
+  burst.textContent = '✦ ✧ ✦ ✧ ✦';
+  stage.appendChild(burst);
+  setTimeout(() => burst.remove(), 1400);
+}
+
 async function showNext() {
   if (showing || !queue.length) return;
   const event = queue.shift();
+  const amount = Number(event.amount || 0);
+  if (amount < minCoins) {
+    showNext();
+    return;
+  }
   const stage = ensureStage();
   if (!stage) {
     queue.unshift(event);
@@ -109,7 +131,7 @@ async function showNext() {
   showing = true;
   const profile = await profileFor(event.fromUid);
   const card = document.createElement('article');
-  card.className = 'support-alert-card';
+  card.className = `support-alert-card support-alert-theme-${theme}`;
 
   const icon = document.createElement(profile.photoURL ? 'img' : 'span');
   icon.className = 'support-alert-avatar';
@@ -124,14 +146,16 @@ async function showNext() {
   copy.className = 'support-alert-copy';
   const eyebrow = document.createElement('span');
   eyebrow.className = 'support-alert-eyebrow';
-  eyebrow.textContent = 'NOVO APOIO';
+  eyebrow.textContent = amount >= 500 ? 'SUPER APOIO' : 'NOVO APOIO';
   const title = document.createElement('strong');
-  title.textContent = `${profile.username || 'Apoiador'} enviou ◈ ${Number(event.amount || 0).toLocaleString('pt-BR')}`;
+  title.textContent = `${profile.username || 'Apoiador'} enviou ◈ ${amount.toLocaleString('pt-BR')}`;
   const sub = document.createElement('span');
-  sub.textContent = 'Obrigado por fortalecer esta live 💙';
+  const message = String(event.message || '').trim();
+  sub.textContent = message || 'Obrigado por fortalecer esta live 💙';
   copy.append(eyebrow, title, sub);
   card.append(icon, copy);
   stage.appendChild(card);
+  addCelebration(stage);
 
   const played = playSupportAlertSound(streamSound);
   if (!played && streamSound !== 'none') renderAudioControl(stage);
@@ -140,7 +164,7 @@ async function showNext() {
   hideTimer = setTimeout(() => {
     card.classList.add('is-leaving');
     setTimeout(() => clearVisibleCard(stage), 260);
-  }, 4200);
+  }, durationMs);
 }
 
 function enqueue(events) {
@@ -178,9 +202,13 @@ function watchStreamSettings() {
   if (!streamId || stopStream) return;
   stopStream = onSnapshot(doc(db, 'streams', streamId), snap => {
     if (!snap.exists()) return;
-    streamSound = normalizeSupportAlertSound(snap.data().supportAlertSound || 'coin');
+    const data = snap.data();
+    streamSound = normalizeSupportAlertSound(data.supportAlertSound || 'coin');
+    minCoins = Math.max(1, Math.min(100000, Number(data.supportAlertMinCoins || 1)));
+    durationMs = Math.max(2500, Math.min(10000, Number(data.supportAlertDurationMs || 4200)));
+    theme = normalizeTheme(data.supportAlertTheme || 'classic');
     renderAudioControl();
-  }, error => console.warn('Configuração de som indisponível.', error));
+  }, error => console.warn('Configuração de alerta indisponível.', error));
 }
 
 if (root && streamId) {

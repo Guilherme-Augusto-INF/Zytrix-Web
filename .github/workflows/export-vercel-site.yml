@@ -26,13 +26,27 @@ jobs:
       - name: Preparar arquivos de deploy
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           mkdir -p export/assets/css export/assets/js
-          cp index.html ao-vivo.html categorias.html categoria.html live.html recursos.html faq.html sobre.html login.html registro.html recuperar-senha.html perfil.html config-live.html loja.html pagamento.html sair.html notificacoes.html admin.html export/
-          cp termos.html privacidade.html diretrizes-da-comunidade.html denuncias-e-moderacao.html conteudo-proibido.html politicas.html denunciar.html moderacao.html export/
-          cp google87f94d9d56cacf74.html robots.txt sitemap.xml vercel.json export/
+
+          # Toda página HTML de nível raiz faz parte do site exportado.
+          # Isso evita esquecer novas rotas quando a plataforma crescer.
+          cp ./*.html export/
+
+          cp robots.txt sitemap.xml vercel.json export/
           cp assets/css/*.css export/assets/css/
           cp assets/js/*.js export/assets/js/
+
+          test -f export/index.html
+          test -f export/live.html
+          test -f export/explorar.html
+          test -f export/clips.html
+          test -f export/creator-center.html
+          test -f export/status.html
+          test -f export/roadmap.html
+          test -f export/assets/js/live-extras.js
+          test -f export/assets/js/platform-core.js
+          test -f export/assets/css/platform.css
 
       - name: Upload do pacote
         uses: actions/upload-artifact@v4
