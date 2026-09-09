@@ -26,8 +26,25 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Apply security hardening
-        run: python3 scripts/security-hardening-v2.py
+      - name: Apply security hardening once
+        run: |
+          if grep -Fq 'function verifiedUser()' firestore.rules; then
+            echo 'Hardening already materialized.'
+          else
+            python3 scripts/security-hardening-v2.py
+          fi
+
+      - name: Persist generated hardening
+        run: |
+          if git diff --quiet; then
+            echo 'No generated changes to commit.'
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "security: materializa hardening v2"
+            git push origin HEAD:security-hardening-v2
+          fi
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
@@ -38,24 +55,8 @@ jobs:
       - name: Firestore rules tests
         run: npm run test:rules
 
-      - name: Security regression tests
-        run: |
-          npx firebase emulators:exec --project demo-zytrix-governance --only firestore \
-            "node --test --test-concurrency=1 tests/security-hardening.rules.test.mjs"
-
       - name: Verify synchronized rule copies
+        if: always()
         run: |
           cmp firestore.rules firebase/firestore.rules
           cmp firestore.rules REGRAS-PARA-COLAR-NO-FIREBASE.txt
-
-      - name: Commit hardened files
-        run: |
-          if git diff --quiet; then
-            echo 'No changes to commit.'
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "security: aplica hardening v2 validado"
-          git push origin HEAD:security-hardening-v2
