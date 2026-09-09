@@ -2223,10 +2223,31 @@ service cloud.firestore {
       // ================================================
 
       allow update:
-        if validSenderWalletUpdate(uid)
-        || validRecipientWalletUpdate(uid)
-        || validPromotionWalletUpdate(uid)
-        || isAdmin();
+        if isAdmin()
+        || (
+          getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.lastTransactionId)
+          ).data.type == "stream_support"
+          && (
+            validSenderWalletUpdate(uid)
+            || validRecipientWalletUpdate(uid)
+          )
+        )
+        || (
+          getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.lastTransactionId)
+          ).data.type == "reward_redeem"
+          && (
+            validSenderWalletUpdate(uid)
+            || validRecipientWalletUpdate(uid)
+          )
+        )
+        || (
+          getAfter(
+            /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.lastTransactionId)
+          ).data.type == "promotion_claim"
+          && validPromotionWalletUpdate(uid)
+        );
 
 
       // ================================================
@@ -2276,14 +2297,17 @@ service cloud.firestore {
 
 
       allow create:
-        if validSupportTransactionCreate(
-          transactionId
+        if (
+          request.resource.data.type == "stream_support"
+          && validSupportTransactionCreate(transactionId)
         )
-        || validRewardTransactionCreate(
-          transactionId
+        || (
+          request.resource.data.type == "reward_redeem"
+          && validRewardTransactionCreate(transactionId)
         )
-        || validPromotionTransactionCreate(
-          transactionId
+        || (
+          request.resource.data.type == "promotion_claim"
+          && validPromotionTransactionCreate(transactionId)
         );
 
 
