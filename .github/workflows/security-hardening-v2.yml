@@ -8,6 +8,7 @@ on:
       - '.github/workflows/security-hardening-v2.yml'
       - 'scripts/security-hardening-v2.py'
       - 'scripts/security-hardening-v2-fixes.py'
+      - 'scripts/security-hardening-v2-test-fixes.py'
       - 'tests/security-hardening.rules.test.mjs'
       - 'tests/firestore.rules.test.mjs'
       - 'tests/platform-expansion.rules.test.mjs'
@@ -48,6 +49,15 @@ jobs:
             python3 scripts/security-hardening-v2-fixes.py
           fi
 
+      - name: Apply final test fixes once
+        run: |
+          if grep -Fq "const deniedDb = as('alice');" tests/platform-expansion.rules.test.mjs && \
+             grep -Fq "await assertSucceeds(setDoc(alert" tests/security-hardening.rules.test.mjs; then
+            echo 'Final test fixes already materialized.'
+          else
+            python3 scripts/security-hardening-v2-test-fixes.py
+          fi
+
       - name: Persist generated hardening
         run: |
           if git diff --quiet; then
@@ -56,7 +66,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -A
-            git commit -m "security: materializa hardening v2 final"
+            git commit -m "security: finaliza testes do hardening v2"
             git push origin HEAD:security-hardening-v2
           fi
 
