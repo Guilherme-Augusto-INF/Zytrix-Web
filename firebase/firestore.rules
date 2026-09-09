@@ -30,6 +30,58 @@ service cloud.firestore {
         && isAdminUid(request.auth.uid);
     }
 
+    function verifiedUser() {
+      return loggedIn()
+        && request.auth.token.email_verified == true;
+    }
+
+    function validHttpsURL(url) {
+      return url is string
+        && url.size() <= 2048
+        && (
+          url == ""
+          || url.matches('^https://[^\\s]+$')
+        );
+    }
+
+    function validStreamingURL(url) {
+      return url is string
+        && url.size() <= 2048
+        && (
+          url.matches('^https://(www\\.|m\\.|player\\.)?twitch\\.tv/.*$')
+          || url.matches('^https://(www\\.|player\\.)?kick\\.com/.*$')
+        );
+    }
+
+    function validPublicImageURL(url) {
+      return url is string
+        && url.size() <= 2048
+        && (
+          url == ""
+          || url.matches('^https://([A-Za-z0-9-]+\\.)*googleusercontent\\.com/.*$')
+          || url.matches('^https://firebasestorage\\.googleapis\\.com/.*$')
+          || url.matches('^https://storage\\.googleapis\\.com/.*$')
+          || url.matches('^https://static-cdn\\.jtvnw\\.net/.*$')
+          || url.matches('^https://clips-media-assets2\\.twitch\\.tv/.*$')
+          || url.matches('^https://([A-Za-z0-9-]+\\.)*kick\\.com/.*$')
+        );
+    }
+
+    function validYouTubeURL(url) {
+      return url == ""
+        || (validHttpsURL(url) && url.matches('^https://(www\\.)?(youtube\\.com|youtu\\.be)/.*$'));
+    }
+
+    function validInstagramURL(url) {
+      return url == ""
+        || (validHttpsURL(url) && url.matches('^https://(www\\.)?instagram\\.com/.*$'));
+    }
+
+    function validTikTokURL(url) {
+      return url == ""
+        || (validHttpsURL(url) && url.matches('^https://(www\\.)?tiktok\\.com/.*$'));
+    }
+
     // Garante que o e-mail/provedor gravado em users/{uid}
     // realmente corresponde ao usuário autenticado.
     function validAuthIdentity(data) {
@@ -73,8 +125,7 @@ service cloud.firestore {
     }
 
     function validPhotoURL(url) {
-      return url is string
-        && url.size() <= 2048;
+      return validPublicImageURL(url);
     }
 
 
@@ -383,7 +434,7 @@ service cloud.firestore {
         )
 
         && request.resource.data.balance
-            == 500 + tx.amount
+            == tx.amount
 
         && request.resource.data.totalSent
             == 0
@@ -413,7 +464,7 @@ service cloud.firestore {
       let recipientAfter =
         getAfter(recipientPath).data;
 
-      return loggedIn()
+      return verifiedUser()
 
         && !isBanned(
           request.auth.uid
@@ -552,7 +603,7 @@ service cloud.firestore {
                 == request.time
 
             && recipientAfter.balance
-                == 500 + data.amount
+                == data.amount
 
             && recipientAfter.totalSent
                 == 0
@@ -614,10 +665,8 @@ service cloud.firestore {
         )
         && (
           !data.keys().hasAll(["vodURL"])
-          || (
-            data.vodURL is string
-            && data.vodURL.size() <= 2048
-          )
+          || data.vodURL == ""
+          || validStreamingURL(data.vodURL)
         )
         && (
           !data.keys().hasAll(["raidTargetStreamId"])
@@ -720,17 +769,20 @@ service cloud.firestore {
             get(settingsPath).data.allowLinks == true
             || !text.matches('.*(https?://|www\\.).*')
           )
+          && getAfter(ratePath).data.uid == request.auth.uid
+          && getAfter(ratePath).data.lastAt == request.time
+          && getAfter(ratePath).data.expiresAt is timestamp
+          && getAfter(ratePath).data.expiresAt > request.time
+          && getAfter(ratePath).data.expiresAt <= request.time + duration.value(3, "h")
           && (
-            get(settingsPath).data.slowModeSeconds == 0
-            || (
-              getAfter(ratePath).data.uid == request.auth.uid
-              && getAfter(ratePath).data.lastAt == request.time
-              && (
-                !exists(ratePath)
-                || request.time >= get(ratePath).data.lastAt
-                   + duration.value(get(settingsPath).data.slowModeSeconds, "s")
-              )
-            )
+            !exists(ratePath)
+            || request.time >= get(ratePath).data.lastAt
+               + duration.value(
+                   get(settingsPath).data.slowModeSeconds > 1
+                     ? get(settingsPath).data.slowModeSeconds
+                     : 1,
+                   "s"
+                 )
           )
         );
     }
@@ -787,7 +839,7 @@ service cloud.firestore {
       let recipientAfter = getAfter(recipientPath).data;
       let redemption = getAfter(redemptionPath).data;
 
-      return loggedIn()
+      return verifiedUser()
         && !isBanned(request.auth.uid)
         && data.transactionId == transactionId
         && data.fromUid == request.auth.uid
@@ -845,7 +897,7 @@ service cloud.firestore {
           || (
             !exists(recipientPath)
             && recipientAfter.createdAt == request.time
-            && recipientAfter.balance == 500 + data.amount
+            && recipientAfter.balance == data.amount
             && recipientAfter.totalSent == 0
             && recipientAfter.totalReceived == data.amount
           )
@@ -982,7 +1034,7 @@ service cloud.firestore {
         /databases/$(database)/documents/streams/$(streamId)/polls/$(pollId)/votes/$(request.auth.uid);
       let vote = getAfter(votePath).data;
 
-      return loggedIn()
+      return verifiedUser()
         && !isBanned(request.auth.uid)
         && resource.data.status == "active"
         && request.resource.data.pollId == resource.data.pollId
@@ -1056,8 +1108,12 @@ service cloud.firestore {
     //
     match /admins/{uid} {
 
-      allow read:
-        if true;
+      allow get:
+        if isOwner(uid)
+        || isAdmin();
+
+      allow list:
+        if isAdmin();
 
       allow create, update, delete:
         if false;
@@ -1564,8 +1620,14 @@ service cloud.firestore {
 
       match /followers/{followerUid} {
 
-        allow read:
-          if true;
+        allow get:
+          if isOwner(followerUid)
+          || isOwner(channelId)
+          || isAdmin();
+
+        allow list:
+          if isOwner(channelId)
+          || isAdmin();
 
         allow create:
           if isOwner(followerUid)
@@ -1621,7 +1683,7 @@ service cloud.firestore {
       // ================================================
 
       allow create:
-        if loggedIn()
+        if verifiedUser()
 
         && !isBanned(
           request.auth.uid
@@ -1661,6 +1723,9 @@ service cloud.firestore {
         && validPlatformStreamFields(
           request.resource.data
         )
+
+        && validStreamingURL(request.resource.data.playbackURL)
+        && validPublicImageURL(request.resource.data.thumbnailURL)
 
         && request.resource.data.keys().hasAll([
           "streamerUid",
@@ -1710,7 +1775,7 @@ service cloud.firestore {
       allow update:
         if
         (
-          loggedIn()
+          verifiedUser()
 
           && !isBanned(
             request.auth.uid
@@ -1753,6 +1818,9 @@ service cloud.firestore {
           && validPlatformStreamFields(
             request.resource.data
           )
+
+          && validStreamingURL(request.resource.data.playbackURL)
+          && validPublicImageURL(request.resource.data.thumbnailURL)
 
           && request.resource.data
               .diff(resource.data)
@@ -1823,7 +1891,7 @@ service cloud.firestore {
           if true;
 
         allow create:
-          if loggedIn()
+          if verifiedUser()
 
           && request.resource.data.transactionId
               == alertId
@@ -1841,6 +1909,10 @@ service cloud.firestore {
           && request.resource.data.createdAt
               == request.time
 
+          && request.resource.data.expiresAt is timestamp
+          && request.resource.data.expiresAt >= request.time + duration.value(23, "h")
+          && request.resource.data.expiresAt <= request.time + duration.value(25, "h")
+
           && validOptionalSupportMessage(
             request.resource.data
           )
@@ -1851,7 +1923,8 @@ service cloud.firestore {
             "streamId",
             "amount",
             "createdAt",
-            "message"
+            "message",
+            "expiresAt"
           ])
 
           && get(
@@ -1925,7 +1998,7 @@ service cloud.firestore {
           if true;
 
         allow create:
-          if loggedIn()
+          if verifiedUser()
 
           && !isChatRestricted(
             request.auth.uid
@@ -2190,8 +2263,10 @@ service cloud.firestore {
             uid
           )
 
+          && verifiedUser()
+
           && request.resource.data.balance
-              == 500
+              == 0
 
           && request.resource.data.totalSent
               == 0
@@ -2305,10 +2380,7 @@ service cloud.firestore {
           request.resource.data.type == "reward_redeem"
           && validRewardTransactionCreate(transactionId)
         )
-        || (
-          request.resource.data.type == "promotion_claim"
-          && validPromotionTransactionCreate(transactionId)
-        );
+        ;
 
 
       allow update, delete:
@@ -2336,7 +2408,7 @@ service cloud.firestore {
 
 
       allow create:
-        if loggedIn()
+        if verifiedUser()
 
         && !isBanned(
           request.auth.uid
@@ -2526,6 +2598,7 @@ service cloud.firestore {
 
       allow create:
         if isOwner(uid)
+        && verifiedUser()
         && progressId == "main"
         && request.resource.data.uid == uid
         && request.resource.data.xp == 10
@@ -2539,6 +2612,12 @@ service cloud.firestore {
         && exists(
           /databases/$(database)/documents/streams/$(request.resource.data.lastStreamId)
         )
+        && exists(
+          /databases/$(database)/documents/streams/$(request.resource.data.lastStreamId)/viewers/$(uid)
+        )
+        && get(
+          /databases/$(database)/documents/streams/$(request.resource.data.lastStreamId)/viewers/$(uid)
+        ).data.lastSeen >= request.time - duration.value(2, "m")
         && request.resource.data.lastWatchRewardAt == request.time
         && request.resource.data.updatedAt == request.time
         && request.resource.data.createdAt == request.time
@@ -2556,6 +2635,7 @@ service cloud.firestore {
 
       allow update:
         if isOwner(uid)
+        && verifiedUser()
         && progressId == "main"
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.createdAt == resource.data.createdAt
@@ -2578,6 +2658,12 @@ service cloud.firestore {
         && exists(
           /databases/$(database)/documents/streams/$(request.resource.data.lastStreamId)
         )
+        && exists(
+          /databases/$(database)/documents/streams/$(request.resource.data.lastStreamId)/viewers/$(uid)
+        )
+        && get(
+          /databases/$(database)/documents/streams/$(request.resource.data.lastStreamId)/viewers/$(uid)
+        ).data.lastSeen >= request.time - duration.value(2, "m")
         && request.resource.data.lastWatchRewardAt == request.time
         && request.resource.data.updatedAt == request.time
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -2623,6 +2709,7 @@ service cloud.firestore {
 
       allow create, update:
         if isOwner(uid)
+        && verifiedUser()
         && docId == "current"
         && request.resource.data.uid == uid
         && request.resource.data.code is string
@@ -2814,14 +2901,10 @@ service cloud.firestore {
         && request.resource.data.about.size() <= 800
         && request.resource.data.games is string
         && request.resource.data.games.size() <= 160
-        && request.resource.data.website is string
-        && request.resource.data.website.size() <= 2048
-        && request.resource.data.youtube is string
-        && request.resource.data.youtube.size() <= 2048
-        && request.resource.data.instagram is string
-        && request.resource.data.instagram.size() <= 2048
-        && request.resource.data.tiktok is string
-        && request.resource.data.tiktok.size() <= 2048
+        && validHttpsURL(request.resource.data.website)
+        && validYouTubeURL(request.resource.data.youtube)
+        && validInstagramURL(request.resource.data.instagram)
+        && validTikTokURL(request.resource.data.tiktok)
         && request.resource.data.updatedAt == request.time
         && request.resource.data.keys().hasOnly([
           "uid",
@@ -2843,7 +2926,7 @@ service cloud.firestore {
         if true;
 
       allow create:
-        if loggedIn()
+        if verifiedUser()
         && !isBanned(request.auth.uid)
         && code.matches('^[a-z0-9_-]{3,24}$')
         && request.resource.data.code == code
@@ -2886,7 +2969,7 @@ service cloud.firestore {
         if true;
 
       allow create:
-        if loggedIn()
+        if verifiedUser()
         && !isBanned(request.auth.uid)
         && request.resource.data.clipId == clipId
         && request.resource.data.creatorUid == request.auth.uid
@@ -2904,10 +2987,11 @@ service cloud.firestore {
         && request.resource.data.title.size() <= 80
         && request.resource.data.momentSeconds is int
         && request.resource.data.momentSeconds >= 0
-        && request.resource.data.sourceUrl is string
-        && request.resource.data.sourceUrl.size() <= 2048
-        && request.resource.data.thumbnailURL is string
-        && request.resource.data.thumbnailURL.size() <= 2048
+        && (
+          request.resource.data.sourceUrl == ""
+          || validStreamingURL(request.resource.data.sourceUrl)
+        )
+        && validPublicImageURL(request.resource.data.thumbnailURL)
         && request.resource.data.matureContent is bool
         && request.resource.data.createdAt == request.time
         && request.resource.data.keys().hasOnly([
@@ -2996,13 +3080,19 @@ service cloud.firestore {
         if isOwner(uid)
         && request.resource.data.uid == uid
         && request.resource.data.lastAt == request.time
-        && request.resource.data.keys().hasOnly(["uid", "lastAt"]);
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(3, "h")
+        && request.resource.data.keys().hasOnly(["uid", "lastAt", "expiresAt"]);
 
       allow update:
         if isOwner(uid)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.lastAt == request.time
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["lastAt"]);
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(3, "h")
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["lastAt", "expiresAt"]);
 
       allow delete:
         if isOwner(uid) || isAdmin();
@@ -3105,14 +3195,20 @@ service cloud.firestore {
         if isOwner(uid)
         && request.resource.data.uid == uid
         && request.resource.data.lastAt == request.time
-        && request.resource.data.keys().hasOnly(["uid", "lastAt"]);
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(3, "h")
+        && request.resource.data.keys().hasOnly(["uid", "lastAt", "expiresAt"]);
 
       allow update:
         if isOwner(uid)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.lastAt == request.time
         && request.time >= resource.data.lastAt + duration.value(1, "s")
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["lastAt"]);
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(3, "h")
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["lastAt", "expiresAt"]);
 
       allow delete:
         if isOwner(uid) || isAdmin();
@@ -3123,15 +3219,19 @@ service cloud.firestore {
         if true;
 
       allow create:
-        if loggedIn()
+        if verifiedUser()
         && !isBanned(request.auth.uid)
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.emoji in ["❤️", "😂", "🔥", "👏", "😮"]
         && request.resource.data.createdAt == request.time
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt >= request.time + duration.value(5, "m")
+        && request.resource.data.expiresAt <= request.time + duration.value(15, "m")
         && request.resource.data.keys().hasOnly([
           "uid",
           "emoji",
-          "createdAt"
+          "createdAt",
+          "expiresAt"
         ])
         && getAfter(
           /databases/$(database)/documents/streams/$(streamId)/reactionRate/$(request.auth.uid)
@@ -3237,6 +3337,7 @@ service cloud.firestore {
 
       allow create:
         if isOwner(uid)
+        && verifiedUser()
         && !isBanned(uid)
         && request.resource.data.uid == uid
         && request.resource.data.optionIndex is int
@@ -3386,36 +3487,7 @@ service cloud.firestore {
         if isAdmin();
 
       allow create:
-        if isOwner(uid)
-        && !isBanned(uid)
-        && request.resource.data.uid == uid
-        && request.resource.data.promotionId == promotionId
-        && request.resource.data.amount is int
-        && request.resource.data.amount >= 1
-        && request.resource.data.amount <= 10000
-        && request.resource.data.transactionId is string
-        && request.resource.data.transactionId.size() > 0
-        && request.resource.data.transactionId.size() <= 128
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.keys().hasOnly([
-          "uid",
-          "promotionId",
-          "amount",
-          "transactionId",
-          "createdAt"
-        ])
-        && getAfter(
-          /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.transactionId)
-        ).data.type == "promotion_claim"
-        && getAfter(
-          /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.transactionId)
-        ).data.toUid == uid
-        && getAfter(
-          /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.transactionId)
-        ).data.promotionId == promotionId
-        && getAfter(
-          /databases/$(database)/documents/zyCoinTransactions/$(request.resource.data.transactionId)
-        ).data.amount == request.resource.data.amount;
+        if false;
 
       allow update, delete:
         if false;
@@ -3670,8 +3742,20 @@ service cloud.firestore {
 
     match /streams/{streamId}/viewers/{viewerUid} {
 
-      allow read:
-        if loggedIn();
+      allow get:
+        if isOwner(viewerUid)
+        || isAdmin()
+        || (
+          loggedIn()
+          && get(/databases/$(database)/documents/streams/$(streamId)).data.streamerUid == request.auth.uid
+        );
+
+      allow list:
+        if isAdmin()
+        || (
+          loggedIn()
+          && get(/databases/$(database)/documents/streams/$(streamId)).data.streamerUid == request.auth.uid
+        );
 
 
       allow create:
@@ -3686,10 +3770,15 @@ service cloud.firestore {
         && request.resource.data.lastSeen
             == request.time
 
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt >= request.time + duration.value(1, "m")
+        && request.resource.data.expiresAt <= request.time + duration.value(3, "m")
+
         && request.resource.data.keys().hasOnly([
           "uid",
           "joinedAt",
-          "lastSeen"
+          "lastSeen",
+          "expiresAt"
         ]);
 
 
@@ -3705,11 +3794,16 @@ service cloud.firestore {
         && request.resource.data.lastSeen
             == request.time
 
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt >= request.time + duration.value(1, "m")
+        && request.resource.data.expiresAt <= request.time + duration.value(3, "m")
+
         && request.resource.data
             .diff(resource.data)
             .affectedKeys()
             .hasOnly([
-              "lastSeen"
+              "lastSeen",
+              "expiresAt"
             ]);
 
 

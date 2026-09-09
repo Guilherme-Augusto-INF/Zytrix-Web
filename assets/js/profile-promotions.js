@@ -64,41 +64,7 @@ function feedback(text, error = false) {
 }
 
 async function claimPromotion(promotionId) {
-  const promo = promotions.find(item => item.id === promotionId);
-  if (!promo || claimed.has(promotionId)) return;
-  try {
-    await ensureWallet(user.uid);
-    const promoRef = doc(db, 'coinPromotions', promotionId);
-    const claimRef = doc(db, 'coinPromotions', promotionId, 'claims', user.uid);
-    const walletRef = doc(db, 'wallets', user.uid);
-    const txRef = doc(collection(db, 'zyCoinTransactions'));
-
-    await runTransaction(db, async tx => {
-      const [promoSnap, claimSnap, walletSnap] = await Promise.all([tx.get(promoRef), tx.get(claimRef), tx.get(walletRef)]);
-      if (!promoSnap.exists() || promoSnap.data().active !== true) throw new Error('promo-unavailable');
-      if (claimSnap.exists()) throw new Error('already-claimed');
-      if (!walletSnap.exists()) throw new Error('wallet-missing');
-      const data = promoSnap.data();
-      const amount = Number(data.amount || 0);
-      const maxClaims = Math.max(1, Number(data.maxClaims || 1));
-      const claimCount = Math.max(0, Number(data.claimCount || 0));
-      const now = Date.now();
-      if (!Number.isInteger(amount) || amount < 1 || amount > 10000 || claimCount >= maxClaims) throw new Error('promo-unavailable');
-      if (data.startsAt?.toDate?.() && data.startsAt.toDate().getTime() > now) throw new Error('promo-unavailable');
-      if (data.endsAt?.toDate?.() && data.endsAt.toDate().getTime() < now) throw new Error('promo-unavailable');
-      const wallet = walletSnap.data();
-      tx.update(promoRef, { claimCount: claimCount + 1, updatedAt: serverTimestamp() });
-      tx.update(walletRef, { balance: Number(wallet.balance || 0) + amount, lastTransactionId: txRef.id, updatedAt: serverTimestamp() });
-      tx.set(claimRef, { uid: user.uid, promotionId, amount, transactionId: txRef.id, createdAt: serverTimestamp() });
-      tx.set(txRef, { transactionId: txRef.id, fromUid: 'zytrix', toUid: user.uid, amount, promotionId, type: 'promotion_claim', status: 'completed', createdAt: serverTimestamp() });
-    });
-    claimed.add(promotionId);
-    feedback(`Você recebeu ◈ ${Number(promo.amount || 0).toLocaleString('pt-BR')} Zy Coins.`);
-    mount();
-  } catch (error) {
-    console.error(error);
-    feedback(error?.message === 'already-claimed' ? 'Você já resgatou este evento.' : 'Não foi possível resgatar a promoção.', true);
-  }
+  alert('Resgates promocionais estão temporariamente pausados enquanto a emissão de Zy Coins migra para o backend seguro.');
 }
 
 function tryMount() {

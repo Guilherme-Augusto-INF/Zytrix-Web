@@ -12,6 +12,7 @@ import {
 } from './firebase.js';
 import { header, footer, escapeHtml, escapeAttr } from './ui.js';
 import { getPlatformPreferences, filterMature } from './platform-core.js';
+import { safeStreamingUrl, safeImageUrl } from './security.js';
 
 header();
 footer();
@@ -47,7 +48,7 @@ async function render() {
   root.innerHTML = hydrated.map(item => `
     <article class="vertical-clip" id="clip-${escapeAttr(item.id)}">
       <div class="vertical-clip-media">
-        ${item.thumbnailURL ? `<img src="${escapeAttr(item.thumbnailURL)}" alt="Thumbnail do clipe" style="width:100%;height:100%;object-fit:cover;max-height:520px">` : '<div><div style="font-size:52px">✂</div><strong>Momento Zytrix</strong></div>'}
+        ${safeImageUrl(item.thumbnailURL) ? `<img src="${escapeAttr(safeImageUrl(item.thumbnailURL))}" referrerpolicy="no-referrer" alt="Thumbnail do clipe" style="width:100%;height:100%;object-fit:cover;max-height:520px">` : '<div><div style="font-size:52px">✂</div><strong>Momento Zytrix</strong></div>'}
       </div>
       <div class="vertical-clip-copy">
         <div class="eyebrow">${item.matureContent ? '18+ · ' : ''}${timeLabel(item.momentSeconds)}</div>
@@ -55,7 +56,7 @@ async function render() {
         <p class="muted">${escapeHtml(item.streamer?.username || 'Streamer')} · marcado por ${escapeHtml(item.creator?.username || 'usuário')}</p>
         <div class="live-interaction-row">
           <a class="btn btn-primary" href="live.html?stream=${encodeURIComponent(item.streamId)}">Abrir transmissão</a>
-          ${item.sourceUrl ? `<a class="btn" href="${escapeAttr(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">Abrir origem/VOD</a>` : ''}
+          ${safeStreamingUrl(item.sourceUrl) ? `<a class="btn" href="${escapeAttr(safeStreamingUrl(item.sourceUrl))}" target="_blank" rel="noopener noreferrer external" referrerpolicy="no-referrer">Abrir origem/VOD</a>` : ''}
           <button class="btn" data-share-clip="${escapeAttr(item.id)}">Compartilhar</button>
         </div>
       </div>

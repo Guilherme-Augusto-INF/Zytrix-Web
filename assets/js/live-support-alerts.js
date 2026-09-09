@@ -15,6 +15,7 @@ import {
   unlockSupportAlertAudio,
   normalizeSupportAlertSound
 } from './support-alert-sound.js';
+import { safeImageUrl } from './security.js';
 
 const streamId = new URLSearchParams(location.search).get('stream') ||
   localStorage.getItem('zytrixSelectedStream') ||
@@ -52,7 +53,7 @@ async function profileFor(uid) {
     const value = snap.exists()
       ? {
           username: String(snap.data().username || 'Apoiador'),
-          photoURL: String(snap.data().photoURL || '')
+          photoURL: safeImageUrl(snap.data().photoURL || '')
         }
       : { username: 'Apoiador', photoURL: '' };
     profileCache.set(uid, value);
@@ -171,6 +172,8 @@ function enqueue(events) {
   const sorted = [...events].sort((a, b) => timestampMs(a.createdAt) - timestampMs(b.createdAt));
   for (const event of sorted) {
     if (!event.transactionId || seen.has(event.transactionId)) continue;
+    const expires = timestampMs(event.expiresAt);
+    if (expires && expires <= Date.now()) continue;
     seen.add(event.transactionId);
     queue.push(event);
   }
