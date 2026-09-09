@@ -1,0 +1,63 @@
+name: Purge jsDelivr Cache
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Invalidar arquivos web alterados
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+            git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA" > /tmp/changed-files.txt
+          else
+            git diff --name-only HEAD^ HEAD > /tmp/changed-files.txt
+          fi
+
+          purged=0
+          failed=0
+
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+
+            case "$file" in
+              *.html|*.js|*.css|*.json|*.xml|*.txt|robots.txt|sitemap.xml|vercel.json)
+                encoded_path="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "$file")"
+                purge_url="https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@main/${encoded_path}"
+                echo "Purgando: $file"
+
+                if curl --fail --silent --show-error --retry 2 --max-time 30 "$purge_url" >/tmp/purge-result.json; then
+                  purged=$((purged + 1))
+                else
+                  echo "::warning file=$file::Falha ao invalidar cache no jsDelivr."
+                  failed=$((failed + 1))
+                fi
+                ;;
+            esac
+          done < /tmp/changed-files.txt
+
+          echo "Arquivos invalidados: $purged"
+          echo "Falhas de invalidação: $failed"
+
+          if [ "$failed" -gt 0 ]; then
+            exit 1
+          fi

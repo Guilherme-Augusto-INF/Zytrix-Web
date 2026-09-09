@@ -1,3 +1,4 @@
+// viewer-presence-counter-v2
 import {
   auth,
   db,
