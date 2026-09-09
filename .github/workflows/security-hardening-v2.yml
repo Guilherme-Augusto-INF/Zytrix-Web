@@ -7,8 +7,14 @@ on:
     paths:
       - '.github/workflows/security-hardening-v2.yml'
       - 'scripts/security-hardening-v2.py'
+      - 'scripts/security-hardening-v2-fixes.py'
       - 'tests/security-hardening.rules.test.mjs'
+      - 'tests/firestore.rules.test.mjs'
+      - 'tests/platform-expansion.rules.test.mjs'
       - 'assets/js/security.js'
+      - 'firestore.rules'
+      - 'firebase/firestore.rules'
+      - 'REGRAS-PARA-COLAR-NO-FIREBASE.txt'
 
 permissions:
   contents: write
@@ -26,12 +32,20 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Apply security hardening once
+      - name: Apply base hardening once
         run: |
           if grep -Fq 'function verifiedUser()' firestore.rules; then
-            echo 'Hardening already materialized.'
+            echo 'Base hardening already materialized.'
           else
             python3 scripts/security-hardening-v2.py
+          fi
+
+      - name: Apply regression fixes once
+        run: |
+          if grep -Fq 'SECURITY-HARDENING-V2-FIXES' firestore.rules; then
+            echo 'Regression fixes already materialized.'
+          else
+            python3 scripts/security-hardening-v2-fixes.py
           fi
 
       - name: Persist generated hardening
@@ -42,7 +56,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -A
-            git commit -m "security: materializa hardening v2"
+            git commit -m "security: materializa hardening v2 final"
             git push origin HEAD:security-hardening-v2
           fi
 
