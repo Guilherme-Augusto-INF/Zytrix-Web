@@ -30,10 +30,16 @@ function levelBadges(level, progressData) {
   return result.join('');
 }
 
+function baseProfileReady() {
+  return Boolean(root?.querySelector('.profile-grid') || root?.querySelector('.info-list'));
+}
+
 function render() {
-  if (!root || !user || !prefs) return;
+  if (!root || !user || !prefs || !baseProfileReady()) return;
+
   const existing = root.querySelector('#profile-plus');
   existing?.remove();
+
   const level = levelFromXp(progress?.xp || 0);
   const achievements = achievementList(progress || {});
   const unlocked = achievements.filter(item => item.unlocked).length;
@@ -132,9 +138,21 @@ function bind() {
 }
 
 function tryMount() {
-  if (!user || !prefs || !root) return;
-  const baseReady = root.querySelector('.profile-grid') || root.querySelector('.info-list');
-  if (!baseReady) return;
+  if (!user || !prefs || !root || !baseProfileReady()) return;
+
+  // O observer acompanha apenas quando o perfil-base fica pronto.
+  // Se o módulo já estiver montado, não renderize novamente: render()
+  // remove/adiciona #profile-plus e isso geraria um loop de MutationObserver.
+  if (root.querySelector('#profile-plus')) return;
+  render();
+}
+
+function refreshFromProgress() {
+  if (!user || !prefs || !root || !baseProfileReady()) return;
+
+  // Atualizações reais de progresso podem redesenhar a seção. Como o DOM
+  // termina com #profile-plus presente, o observer disparado por esse redraw
+  // passa pelo guard de tryMount() e não entra em recursão.
   render();
 }
 
@@ -143,11 +161,19 @@ onAuthStateChanged(auth, async current => {
   stopProgress?.();
   stopProgress = null;
   if (!user) return;
-  prefs = await getPlatformPreferences(user.uid).catch(() => ({ hideMatureContent:false, safeMode:false, allowReactions:true, compactAlerts:false }));
+
+  prefs = await getPlatformPreferences(user.uid).catch(() => ({
+    hideMatureContent: false,
+    safeMode: false,
+    allowReactions: true,
+    compactAlerts: false
+  }));
+
   stopProgress = watchProgress(user.uid, value => {
     progress = value;
-    tryMount();
+    refreshFromProgress();
   }, () => {});
+
   tryMount();
 });
 
@@ -156,4 +182,7 @@ if (root) {
   observer.observe(root, { childList: true, subtree: false });
 }
 
-window.addEventListener('pagehide', () => { stopProgress?.(); observer?.disconnect(); });
+window.addEventListener('pagehide', () => {
+  stopProgress?.();
+  observer?.disconnect();
+});
